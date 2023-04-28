@@ -1,0 +1,12 @@
+{
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.linting.pylintArgs": [
+        "--rcfile=/home/liu0003/Desktop/projects/wavebench/.pylintrc",
+        "--disable=W0221, W0613",
+        "--generated-members",
+        "torch.*"
+    ],
+    "editor.formatOnSave": false,
+    "python.linting.flake8Enabled": false,
+}

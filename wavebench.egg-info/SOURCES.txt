@@ -1,0 +1,7 @@
+setup.py
+wavebench/__init__.py
+wavebench.egg-info/PKG-INFO
+wavebench.egg-info/SOURCES.txt
+wavebench.egg-info/dependency_links.txt
+wavebench.egg-info/not-zip-safe
+wavebench.egg-info/top_level.txt
