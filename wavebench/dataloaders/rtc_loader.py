@@ -14,31 +14,28 @@ class RtcDataset(Dataset):
   """The reverse time continuation dataset
 
   Args:
-      dataset_name (str): can be `rtc` or `mnist`.
-          Default to `rtc`.
-      dataset_dir (str): folder that contains the rtc datasets.
-          Default to '/home/liu0003/Desktop/datasets/rtc/'.
+      dataset_name (str): can be `thick_lines` or `mnist`.
+          Default to `thick_lines`.
       sidelen: the side length of the input and target images.
           Default to 128. For lengths other than 128, the images will be
           interpolated to the desinated sidelen.
   """
   def __init__(self,
-               dataset_name='rtc_thick_lines',
-               dataset_dir='/home/liu0003/Desktop/datasets/rtc/',
+               dataset_name='thick_lines',
                sidelen=128):
     super(RtcDataset, self).__init__()
 
     self.sidelen = sidelen
 
-    if dataset_name == 'rtc_thick_lines':
+    if dataset_name == 'thick_lines':
       initial_pressure_dataset = np.memmap(
         f'{rtc_dataset}/initial_pressure_dataset.npy', mode='r',
         shape=(3000, 512, 512), dtype=np.float32)
       final_pressure_dataset = np.memmap(
           f'{rtc_dataset}/final_pressure_dataset.npy', mode='r',
           shape=(3000, 512, 512), dtype=np.float32)
-    elif dataset_name == 'rtc_mnist':
-      raise ValueError('rtc_mnist is not supported yet')
+    elif dataset_name == 'mnist':
+      raise ValueError('mnist is not supported yet')
     else:
       raise ValueError('dataset name can be either thick_lines or mnist')
 
@@ -63,10 +60,10 @@ class RtcDataset(Dataset):
     return self.len
 
   def __getitem__(self, idx):
-    source_sample = self.final[idx]
-    final_sample = self.source[idx]
+    final_sample = self.final[idx]
+    source_sample = self.source[idx]
     # [1 h w]
-    return source_sample, final_sample
+    return final_sample, source_sample
 
 
 def get_dataloaders_rtc_thick_lines(
@@ -98,7 +95,7 @@ def get_dataloaders_rtc_thick_lines(
           evaluation, and testing
   """
   dataset = RtcDataset(
-      dataset_name='rtc_thick_lines',
+      dataset_name='thick_lines',
       sidelen=sidelen,
       )
 
