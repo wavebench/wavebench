@@ -2,8 +2,9 @@
 import os
 import numpy as np
 import imageio
-from wavebench import wavebench_dataset_path
 from tqdm import tqdm
+from wavebench import wavebench_dataset_path
+from wavebench import utils
 
 data_path = os.path.join(wavebench_dataset_path, "time_varying/thick_lines")
 
@@ -15,15 +16,16 @@ print(f'saved to {data_path}')
 def generate_random_lines_dataset(num_data):
   """Generate thick lines"""
   n = 512
-  n_seg_min = 1
-  n_seg_max = 5
-  min_length = 20
+  n_seg_min = 5
+  n_seg_max = 10
+  min_length = 50
   max_length = 100
-  max_width = 12
-  min_width = 6
+  min_width = 20
+  max_width = 40
   min_amp = .2
 
   for k in tqdm(range(num_data)):
+    utils.seed_everything(k)
     n_range = np.arange(n)
     xv, yv = np.meshgrid(n_range, n_range)
     gp = np.vstack((xv.reshape(1, n**2), yv.reshape(1, n**2)))

@@ -2,4 +2,4 @@
 import os
 
 wavebench_dataset_path = os.path.dirname(
-    '/home/liu0003/Desktop/datasets/wavebench_dataset/')
+    '/home/liu0003/Desktop/projects/wavebench/wavebench_dataset/')

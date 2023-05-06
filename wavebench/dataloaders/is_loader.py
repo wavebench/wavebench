@@ -49,11 +49,10 @@ class IsDataset(Dataset):
     measurements = rearrange(measurements, 'n h w -> n 1 h w')
 
     final = rearrange(final, 'n h w -> n 1 h w')
-    final = F.interpolate(final, (512,512))
+    # final = F.interpolate(final, (512,512))
 
-    if sidelen != 128:
-      measurements = interpolate(measurements, size=[sidelen, sidelen])
-      final = interpolate(final, size=[sidelen, sidelen])
+    measurements = interpolate(measurements, size=[sidelen, sidelen])
+    final = interpolate(final, size=[sidelen, sidelen])
 
     self.measurements = measurements
     self.final = final

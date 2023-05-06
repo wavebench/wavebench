@@ -48,9 +48,8 @@ class RtcDataset(Dataset):
     source = rearrange(source, 'n h w -> n 1 h w')
     final = rearrange(final, 'n h w -> n 1 h w')
 
-    if sidelen != 128:
-      source = interpolate(source, size=[sidelen, sidelen])
-      final = interpolate(final, size=[sidelen, sidelen])
+    source = interpolate(source, size=[sidelen, sidelen])
+    final = interpolate(final, size=[sidelen, sidelen])
 
     self.source = source
     self.final = final

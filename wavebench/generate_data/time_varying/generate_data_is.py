@@ -73,7 +73,7 @@ def get_data_from_sensors(medium, initial_pressure):
   return records
 
 
-name_list = os.listdir(thick_lines_data_path)
+name_list = sorted(os.listdir(thick_lines_data_path))
 num_data = len(name_list)
 
 # https://vmascagn.web.cern.ch/vmascagn/LABO_2020/numpy-memmap_for_ghost_imaging.html
