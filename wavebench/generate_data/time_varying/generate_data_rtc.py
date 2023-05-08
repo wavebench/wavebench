@@ -1,4 +1,4 @@
-""" Generate data for RTC dataset."""
+""" Generate data for Reverse Time Continuation (RTC) dataset."""
 import os
 import cv2
 import numpy as np
