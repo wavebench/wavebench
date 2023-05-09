@@ -22,18 +22,22 @@ class RtcDataset(Dataset):
   """
   def __init__(self,
                dataset_name='thick_lines',
+               medium_type='gaussian_lens',
                sidelen=128):
     super(RtcDataset, self).__init__()
 
     self.sidelen = sidelen
 
     if dataset_name == 'thick_lines':
-      initial_pressure_dataset = np.memmap(
-        f'{rtc_dataset}/initial_pressure_dataset.npy', mode='r',
-        shape=(3000, 512, 512), dtype=np.float32)
-      final_pressure_dataset = np.memmap(
-          f'{rtc_dataset}/final_pressure_dataset.npy', mode='r',
+      if medium_type in ['gaussian_lens', 'gaussian_random_field']:
+        initial_pressure_dataset = np.memmap(
+          f'{rtc_dataset}/{medium_type}_initial_pressure_dataset.npy', mode='r',
           shape=(3000, 512, 512), dtype=np.float32)
+        final_pressure_dataset = np.memmap(
+            f'{rtc_dataset}/{medium_type}_final_pressure_dataset.npy', mode='r',
+            shape=(3000, 512, 512), dtype=np.float32)
+      else:
+        raise ValueError(f'medium_type {medium_type} not recognized.')
     elif dataset_name == 'mnist':
       raise ValueError('mnist is not supported yet')
     else:
@@ -66,6 +70,7 @@ class RtcDataset(Dataset):
 
 
 def get_dataloaders_rtc_thick_lines(
+      medium_type='gaussian_lens',
       train_batch_size=1,
       val_batch_size=1,
       test_batch_size=1,
@@ -76,6 +81,7 @@ def get_dataloaders_rtc_thick_lines(
   """Prepare loaders of the thick line reverse time continuation dataset.
 
   Args:
+      medium_type: can be `gaussian_lens` or `gaussian_random_field`.
       train_batch_size (int, optional): batch size of training.
           Defaults to 1.
       val_batch_size (int, optional): batch size of evaluation.
@@ -95,6 +101,7 @@ def get_dataloaders_rtc_thick_lines(
   """
   dataset = RtcDataset(
       dataset_name='thick_lines',
+      medium_type=medium_type,
       sidelen=sidelen,
       )
 
