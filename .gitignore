@@ -1,7 +1,7 @@
 .ipynb_checkpoints/
 *.pyc
 __pycache__/
-saved_model/
+saved_models/
 figs/
 deprecated/
 .DS_Store
@@ -15,4 +15,5 @@ deprecated/
 *.h5
 *.pth
 /wavebench_dataset
+
 
