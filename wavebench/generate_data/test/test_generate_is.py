@@ -6,27 +6,32 @@ import cv2
 import matlab.engine # the matlab engine for python
 import matplotlib.pyplot as plt
 
-from wavebench.generate_data.time_varying.generate_data_rtc import generate_rtc
-from wavebench import wavebench_dataset_path
-from wavebench.utils import absolute_file_paths, seed_everything
-from wavebench.generate_data.time_varying.gaussian_random_field import generate_gaussian_random_field
+import jax
+
 from wavebench import wavebench_path
+from wavebench.generate_data.time_varying.generate_data_is import generate_is
+from wavebench import wavebench_dataset_path
+from wavebench.generate_data.time_varying.gaussian_random_field import generate_gaussian_random_field
+from wavebench.utils import absolute_file_paths, seed_everything
+
 
 # %%
 thick_lines_data_path = os.path.join(
     wavebench_dataset_path, "time_varying/thick_lines")
 
 config = ml_collections
+config.device_id = 0
 config.save_data = False
 
 config.domain_sidelen = 512
 config.domain_dx = 2
 
 config.medium_type = 'gaussian_lens'
+# config.medium_type = 'gaussian_random_field'
+
 config.medium_source_loc = (199, 219)
 config.medium_density = 2650
 config.pml_size = 10
-config.device_id = 0
 
 #  define the properties of the propagation medium
 min_wavespeed = 1400
@@ -57,41 +62,49 @@ max_wavespeed - min_wavespeed) + min_wavespeed
 
 # only a single example is generated
 config.source_list = sorted(absolute_file_paths(thick_lines_data_path))[:1]
-initial_pressure_dataset, final_pressure_dataset = generate_rtc(config)
-jwave_final_pressure = final_pressure_dataset[0]
+initial_pressure_dataset, boundary_measurement_dataset = generate_is(config)
+jwave_measurements = boundary_measurement_dataset[0]
 
-# %%
+
+resized_len = config.domain_sidelen//2
+
+resized_initial_pressure = np.zeros_like(initial_pressure_dataset[0])
+
+image_array = jax.image.resize(
+  initial_pressure_dataset[0],
+  (resized_len, resized_len),
+  method='bicubic')
+
+resized_initial_pressure[
+    :resized_len,
+    resized_len//2: resized_len//2 + resized_len] = image_array
+
 
 eng = matlab.engine.start_matlab()
 eng.cd(str(os.path.join(wavebench_path, "wavebench/generate_data/test")))
 
-# MATLAB expects the input arguments to be of data type double
-kwave_final_pressure = eng.compute_rtc_final(
+
+kwave_measurements = eng.compute_is_measurements(
   np.double(config.medium_sound_speed),
   np.double(config.medium_density),
   np.double(config.domain_dx),
-  initial_pressure_dataset[0])
-kwave_final_pressure = np.array(kwave_final_pressure)
-
+  resized_initial_pressure,
+  np.double(config.pml_size))
+kwave_measurements = np.array(kwave_measurements).T
 
 # %%
-mse = np.mean( (kwave_final_pressure - jwave_final_pressure)**2 )
+mse = np.mean( (kwave_measurements - jwave_measurements)**2 )
 np.testing.assert_array_less(mse, 1e-4)
 
-
 # %%
-plt.figure()
-fig, axes = plt.subplots(1, 3, figsize=(9, 3))
+fig, axes = plt.subplots(1, 3, figsize=(8, 6))
 
-axes[0].imshow(kwave_final_pressure)
+axes[0].imshow(kwave_measurements)
 axes[0].set_title('kwave')
-axes[1].imshow(jwave_final_pressure)
+axes[1].imshow(jwave_measurements)
 axes[1].set_title('jwave')
-axes[2].imshow(np.abs(jwave_final_pressure - kwave_final_pressure))
+axes[2].imshow(np.abs(kwave_measurements - jwave_measurements))
 axes[2].set_title('diff')
 
-plt.plot()
 
 
-
-# %%
