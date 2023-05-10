@@ -79,7 +79,7 @@ def main():
       save_top_k=1,
       mode='min')
 
-  task_name = f'is_{args.dataset_name}'
+  task_name = f'helmholtz_{args.dataset_name}'
 
   model_save_dir = str(wavebench_path + f'/saved_models/{task_name}')
 

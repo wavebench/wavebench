@@ -1,10 +1,22 @@
-""" Generate data for Reverse Time Continuation (RTC) dataset."""
+""" Generate data for Reverse Time Continuation (RTC) dataset.
+
+Example usage:
+python generate_data_rtc.py \
+  --device_id 0 \
+  --medium_type gaussian_lens
+
+python generate_data_rtc.py \
+  --device_id 1 \
+  --medium_type gaussian_random_field
+"""
+
 import os
+import argparse
+
 import cv2
 import numpy as np
 import ml_collections
 from tqdm import tqdm
-from functools import partial
 
 import jax
 from jax import jit
@@ -83,19 +95,30 @@ def generate_rtc(config):
 
   return initial_pressure_dataset, final_pressure_dataset
 
-if __name__ == '__main__':
 
-  thick_lines_data_path = os.path.join(
-      wavebench_dataset_path, "time_varying/thick_lines")
+thick_lines_data_path = os.path.join(
+    wavebench_dataset_path, "time_varying/thick_lines")
 
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--medium_type', type=str, default='gaussian_lens',
+                    help='Can be `gaussian_lens` or `gaussian_random_field`.')
+parser.add_argument('--device_id', type=int, default=0)
+parser.add_argument('--save_data', default=True,
+                    type=lambda x: (str(x).lower() == 'true'))
+
+
+def main():
+
+  args = parser.parse_args()
   config = ml_collections
+
+  config.medium_type = args.medium_type
+  config.device_id = args.device_id
+  config.save_data = args.save_data
 
   config.domain_sidelen = 512
   config.domain_dx = 2
-
-  # config.medium_type = 'gaussian_lens'
-  config.medium_type = 'gaussian_random_field'
-
   config.medium_source_loc = (199, 219)
   config.medium_density = 2650
   config.pml_size = 10
@@ -128,7 +151,8 @@ if __name__ == '__main__':
   max_wavespeed - min_wavespeed) + min_wavespeed
 
   config.source_list = sorted(absolute_file_paths(thick_lines_data_path))#[:10]
-  config.device_id = 0 #1
-  config.save_data = True
-
+  print(f'Number of sources: {len(config.source_list)}')
   generate_rtc(config)
+
+if __name__ == '__main__':
+  main()

@@ -74,7 +74,8 @@ def get_dataloaders_helmholtz(
       dataset_name='GRF_7Hz',
       train_batch_size=1,
       test_batch_size=1,
-      train_fraction=0.75,
+      train_fraction=0.625,
+      test_fraction=0.125,
       sidelen=None,
       num_workers=1):
   """Prepare loaders of the thick line reverse time continuation dataset.
@@ -86,7 +87,9 @@ def get_dataloaders_helmholtz(
       test_batch_size (int, optional): batch size of testing.
           Defaults to 1.
       train_fraction (float, optional): fraction of data for training.
-          Defaults to 0.9.
+          Defaults to 0.625.
+      test_fraction (float, optional): fraction of data for testing.
+          Defaults to 0.125.
       sidelen: the side length of the input and target images.
           Default to None (keeps the original size).
           For an integer-valued sidelen, the images will be
@@ -102,23 +105,25 @@ def get_dataloaders_helmholtz(
       sidelen=sidelen
       )
 
-  test_fraction = 1 - train_fraction
+  val_fraction = 1 - train_fraction - test_fraction
 
   subsets = torch.utils.data.random_split(
-      dataset, [train_fraction, test_fraction],
+      dataset, [train_fraction, val_fraction, test_fraction],
       generator=torch.Generator().manual_seed(42))
 
   image_datasets = {
       'train': subsets[0],
-      'test': subsets[1]}
+      'val': subsets[1],
+      'test': subsets[2]}
 
   batch_sizes = {
       'train': train_batch_size,
+      'val': test_batch_size,
       'test': test_batch_size}
 
   dataloaders = {
       x: DataLoader(
           image_datasets[x], batch_size=batch_sizes[x],
           shuffle=(x == 'train'), pin_memory=True,
-          num_workers=num_workers) for x in ['train', 'test']}
+          num_workers=num_workers) for x in ['train', 'val', 'test']}
   return dataloaders
