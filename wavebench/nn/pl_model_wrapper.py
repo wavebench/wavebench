@@ -3,7 +3,7 @@ import torch
 import pytorch_lightning as pl
 from neuralop.models import FNO2d
 from wavebench.nn.unet import UNet
-
+from wavebench.nn.lploss import LpLoss
 
 def get_model(model_config):
   model_config = model_config.copy()
@@ -40,8 +40,11 @@ class LitModel(pl.LightningModule):
       self.loss_fun = torch.nn.MSELoss()
     elif loss_fun_type == 'l1':
       self.loss_fun = torch.nn.L1Loss()
+    elif loss_fun_type == 'relative_l2':
+      self.loss_fun = LpLoss(p=2)
     else:
-      raise ValueError('Unknown loss function type: {}'.format(loss_fun_type))
+      raise ValueError(
+        'Unknown loss function type: {}'.format(loss_fun_type))
 
   def forward(self, x):
     return self.model(x)

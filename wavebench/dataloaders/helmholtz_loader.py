@@ -74,7 +74,7 @@ def get_dataloaders_helmholtz(
       dataset_name='GRF_7Hz',
       train_batch_size=1,
       test_batch_size=1,
-      train_fraction=0.9,
+      train_fraction=0.75,
       sidelen=None,
       num_workers=1):
   """Prepare loaders of the thick line reverse time continuation dataset.
@@ -102,7 +102,7 @@ def get_dataloaders_helmholtz(
       sidelen=sidelen
       )
 
-  test_fraction = round(1 - train_fraction, 1)
+  test_fraction = 1 - train_fraction
 
   subsets = torch.utils.data.random_split(
       dataset, [train_fraction, test_fraction],
