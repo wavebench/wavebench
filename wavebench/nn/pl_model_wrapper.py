@@ -1,10 +1,12 @@
 """Pytorch lightning wrapper for models"""""
 import torch
 import pytorch_lightning as pl
-from wavebench.nn.unet import UNet
 from neuralop.models import FNO2d
+from wavebench.nn.unet import UNet
+
 
 def get_model(model_config):
+  model_config = model_config.copy()
   model_name = model_config.pop('model_name')
   if model_name.lower() == 'unet':
     model = UNet(**model_config)
@@ -16,6 +18,7 @@ def get_model(model_config):
 
 
 class LitModel(pl.LightningModule):
+  """ Pytorch lightning wrapper for models"""""
   def __init__(
     self,
     model_config,
