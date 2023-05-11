@@ -33,10 +33,10 @@ class IsDataset(Dataset):
       if medium_type in ['gaussian_lens', 'gaussian_random_field']:
         initial_pressure_dataset = np.memmap(
             f'{is_dataset_dir}/{medium_type}_initial_pressure_dataset.npy',
-            mode='r', shape=(3000, 512, 512), dtype=np.float32)
+            mode='r', shape=(5000, 512, 512), dtype=np.float32)
         boundary_measurement_dataset = np.memmap(
             f'{is_dataset_dir}/{medium_type}_boundary_measurement_dataset.npy',
-            mode='r', shape=(3000, 1334, 512), dtype=np.float32)
+            mode='r', shape=(5000, 1334, 512), dtype=np.float32)
       else:
         raise ValueError(f'medium_type {medium_type} not recognized.')
     elif dataset_name == 'mnist':
@@ -78,8 +78,10 @@ class IsDataset(Dataset):
 def get_dataloaders_is_thick_lines(
       medium_type='gaussian_lens',
       train_batch_size=1,
-      test_batch_size=1,
-      train_fraction=0.9,
+      eval_batch_size=1,
+      num_train_samples=4000,
+      num_val_samples=500,
+      num_test_samples=500,
       sidelen=128,
       num_workers=1):
   """Prepare loaders of the thick line reverse time continuation dataset.
@@ -88,10 +90,11 @@ def get_dataloaders_is_thick_lines(
       medium_type: can be `gaussian_lens` or `gaussian_random_field`.
       train_batch_size (int, optional): batch size of training.
           Defaults to 1.
-      test_batch_size (int, optional): batch size of testing.
+      eval_batch_size (int, optional): batch size of validation & testing.
           Defaults to 1.
-      train_fraction (float, optional): fraction of data for training.
-          Defaults to 0.9.
+      num_train_samples (int): number of training samples.
+      num_val_samples (int): number of validation samples.
+      num_test_samples (int): number of test samples.
       sidelen (int, optional): side length of the data. Defaults to 128.
       num_workers (int, optional): number of workders. Defaults to 1.
 
@@ -105,19 +108,22 @@ def get_dataloaders_is_thick_lines(
       sidelen=sidelen,
       )
 
-  test_fraction = 1 - train_fraction
+  assert num_train_samples + num_val_samples + num_test_samples <= len(dataset)
 
   subsets = torch.utils.data.random_split(
-      dataset, [train_fraction, test_fraction],
+      dataset, [num_train_samples, num_val_samples, num_test_samples],
       generator=torch.Generator().manual_seed(42))
 
   image_datasets = {
       'train': subsets[0],
-      'test': subsets[1]}
+      'val': subsets[1],
+      'test': subsets[2]}
 
   batch_sizes = {
       'train': train_batch_size,
-      'test': test_batch_size}
+      'val': eval_batch_size,
+      'test': eval_batch_size
+      }
 
   dataloaders = {
       x: DataLoader(

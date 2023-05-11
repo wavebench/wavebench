@@ -22,11 +22,11 @@ parser.add_argument('--medium_type', type=str, default='gaussian_lens',
 # Training settings
 parser.add_argument('--num_epochs', type=int, default=50,
                     help='number of training epochs.')
-parser.add_argument('--loss_fun_type', type=str, default='mse',
+parser.add_argument('--loss_fun_type', type=str, default='relative_l2',
                     help='the loss function.')
-parser.add_argument('--learning_rate', type=float, default=2e-4,
+parser.add_argument('--learning_rate', type=float, default=1e-3,
                     help='learning rate of gradient descent.')
-parser.add_argument('--weight_decay', type=float, default=1e-6)
+parser.add_argument('--weight_decay', type=float, default=1e-5)
 parser.add_argument('--eta_min', type=float, default=1e-5,
                     help='the eta_min for CosineAnnealingLR decay.')
 
@@ -46,7 +46,7 @@ def main():
 
   dataset_setting_dict = {
     'train_batch_size': args.batch_size,
-    'test_batch_size': args.batch_size,
+    'eval_batch_size': args.batch_size,
     'num_workers': args.num_workers
     }
 
