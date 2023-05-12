@@ -14,11 +14,15 @@ class DoubleConv(nn.Module):
     self.double_conv = nn.Sequential(
         nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1,
                   bias=False),
-        nn.BatchNorm2d(mid_channels),
+        nn.BatchNorm2d(mid_channels,
+                      #  track_running_stats=False
+                      ),
         nn.ReLU(inplace=True),
         nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1,
                   bias=False),
-        nn.BatchNorm2d(out_channels),
+        nn.BatchNorm2d(mid_channels, 
+                      #  track_running_stats=False
+                       ),
         nn.ReLU(inplace=True)
     )
 
@@ -83,7 +87,7 @@ class OutConv(nn.Module):
 
 class UNet(nn.Module):
   def __init__(self, n_input_channels, n_output_channels,
-              channel_reduction_factor=1,
+              channel_reduction_factor=2,
               bilinear=False):
     super(UNet, self).__init__()
     self.n_input_channels = n_input_channels

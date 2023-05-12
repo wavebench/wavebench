@@ -78,7 +78,7 @@ def main():
     **training_config)
 
   checkpoint_callback = ModelCheckpoint(
-      monitor='val_loss',
+      monitor='val_rel_lp_loss',
       save_top_k=1,
       mode='min')
 

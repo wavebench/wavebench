@@ -1,31 +1,35 @@
 """ LpLoss class for computing the relative error between two tensors. """
 import torch
 
-class LpLoss(object):
-  """ LpLoss class for computing the relative error between two tensors. """
-  def __init__(self, p=2, size_average=True, reduction=True):
-    super(LpLoss, self).__init__()
+def lp_loss(input: torch.Tensor, target: torch.Tensor,
+            p: int = 2, reduction: str = "mean"):
+  batch_size = input.size(0)
+  diff_norms = torch.norm(
+    input.reshape(batch_size, -1) - target.reshape(batch_size, -1), p, 1)
+  target_norms = torch.norm(
+    target.reshape(batch_size, -1), p, 1)
+  val = diff_norms / target_norms
+  if reduction == "mean":
+    return torch.mean(val)
+  elif reduction == "sum":
+    return torch.sum(val)
+  elif reduction == "none":
+    return val
+  else:
+    raise NotImplementedError(reduction)
 
-    #Dimension and Lp-norm type are postive
-    assert p > 0
+class LpLoss(torch.nn.Module):
+  """LpLoss for PDEs.
 
+  Args:
+      p (int, optional): p in Lp norm. Defaults to 2.
+      reduction (str, optional): Reduction method. Defaults to "mean".
+  """
+
+  def __init__(self, p: int = 2, reduction: str = "mean") -> None:
+    super().__init__()
     self.p = p
     self.reduction = reduction
-    self.size_average = size_average
 
-  def rel(self, x, y):
-    num_examples = x.size()[0]
-    diff_norms = torch.norm(
-      x.reshape(num_examples,-1) - y.reshape(num_examples,-1), self.p, 1)
-    y_norms = torch.norm(y.reshape(num_examples,-1), self.p, 1)
-
-    if self.reduction:
-      if self.size_average:
-        return torch.mean(diff_norms/y_norms)
-      else:
-        return torch.sum(diff_norms/y_norms)
-
-    return diff_norms/y_norms
-
-  def __call__(self, x, y):
-    return self.rel(x, y)
+  def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    return lp_loss(input, target, p=self.p, reduction=self.reduction)

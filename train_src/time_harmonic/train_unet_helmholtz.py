@@ -56,8 +56,8 @@ def main():
   model_config = {
     'model_name': 'unet',
     'n_input_channels': 1,
-    'n_output_channels': 1,
-    'channel_reduction_factor': 1}
+    'n_output_channels': 1
+    }
 
   model_name = model_config['model_name']
 

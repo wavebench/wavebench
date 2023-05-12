@@ -17,26 +17,24 @@ class IsDataset(Dataset):
   Args:
       dataset_name (str): can be `thick_lines` or `mnist`.
           Default to `thick_lines`.
-      sidelen: the side length of the input and target images.
-          Default to 128. For lengths other than 128, the images will be
+      resize_sidelen: the side length of the input and target images.
+          Default to None. If sidelen is an integer, the images will be
           interpolated to the desinated sidelen.
   """
   def __init__(self,
                dataset_name='thick_lines',
                medium_type='gaussian_lens',
-               sidelen=128):
+               resize_sidelen=None):
     super(IsDataset, self).__init__()
-
-    self.sidelen = sidelen
 
     if dataset_name == 'thick_lines':
       if medium_type in ['gaussian_lens', 'gaussian_random_field']:
         initial_pressure_dataset = np.memmap(
             f'{is_dataset_dir}/{medium_type}_initial_pressure_dataset.npy',
-            mode='r', shape=(5000, 512, 512), dtype=np.float32)
+            mode='r', shape=(5000, 128, 128), dtype=np.float32)
         boundary_measurement_dataset = np.memmap(
             f'{is_dataset_dir}/{medium_type}_boundary_measurement_dataset.npy',
-            mode='r', shape=(5000, 1334, 512), dtype=np.float32)
+            mode='r', shape=(5000, 334, 128), dtype=np.float32)
       else:
         raise ValueError(f'medium_type {medium_type} not recognized.')
     elif dataset_name == 'mnist':
@@ -47,33 +45,37 @@ class IsDataset(Dataset):
     initial_pressure_dataset = np.array(initial_pressure_dataset)
     boundary_measurement_dataset = np.array(boundary_measurement_dataset)
 
-    measurements = torch.from_numpy(
+    initial = torch.from_numpy(
         initial_pressure_dataset).type(torch.FloatTensor)
-    final = torch.from_numpy(
+    measurements = torch.from_numpy(
         boundary_measurement_dataset).type(torch.FloatTensor)
 
+    initial = rearrange(initial, 'n h w -> n 1 h w')
     measurements = rearrange(measurements, 'n h w -> n 1 h w')
 
-    final = rearrange(final, 'n h w -> n 1 h w')
+    if resize_sidelen is not None:
+      print(f'interpolating images to size {resize_sidelen}')
+      initial = interpolate(
+          initial, size=[resize_sidelen, resize_sidelen],
+          mode='bicubic')
 
-    measurements = interpolate(measurements, size=[sidelen, sidelen],
-                               mode='bicubic')
-    final = interpolate(final, size=[sidelen, sidelen],
-                        mode='bicubic')
-
+    measurements = interpolate(
+        measurements,
+        size=[initial.shape[-1], initial.shape[-2]],
+        mode='nearest')
     self.measurements = measurements
-    self.final = final
+    self.initial = initial
     self.len = measurements.shape[0]
 
   def __len__(self):
     return self.len
 
   def __getitem__(self, idx):
-    final_sample = self.final[idx]
     measurement_sample = self.measurements[idx]
-    # [1 h w]
-    return final_sample, measurement_sample
+    initial_sample = self.initial[idx]
 
+    # [1 h w]
+    return measurement_sample, initial_sample
 
 def get_dataloaders_is_thick_lines(
       medium_type='gaussian_lens',
@@ -82,7 +84,7 @@ def get_dataloaders_is_thick_lines(
       num_train_samples=4000,
       num_val_samples=500,
       num_test_samples=500,
-      sidelen=128,
+      resize_sidelen=None,
       num_workers=1):
   """Prepare loaders of the thick line reverse time continuation dataset.
 
@@ -95,7 +97,9 @@ def get_dataloaders_is_thick_lines(
       num_train_samples (int): number of training samples.
       num_val_samples (int): number of validation samples.
       num_test_samples (int): number of test samples.
-      sidelen (int, optional): side length of the data. Defaults to 128.
+      resize_sidelen (int or None, optional): If sidelen is an integer,
+          the images will be interpolated to the desinated sidelen.
+          Default to None.
       num_workers (int, optional): number of workders. Defaults to 1.
 
   Returns:
@@ -105,7 +109,7 @@ def get_dataloaders_is_thick_lines(
   dataset = IsDataset(
       dataset_name='thick_lines',
       medium_type=medium_type,
-      sidelen=sidelen,
+      resize_sidelen=resize_sidelen,
       )
 
   assert num_train_samples + num_val_samples + num_test_samples <= len(dataset)

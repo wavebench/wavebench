@@ -6,6 +6,7 @@ from torch.nn.functional import interpolate
 import numpy as np
 from einops import rearrange
 from wavebench import wavebench_dataset_path
+# from wavebench.utils import UnitGaussianNormalizer
 
 rtc_dataset = os.path.join(wavebench_dataset_path, "time_varying/rtc")
 
@@ -16,26 +17,24 @@ class RtcDataset(Dataset):
   Args:
       dataset_name (str): can be `thick_lines` or `mnist`.
           Default to `thick_lines`.
-      sidelen: the side length of the input and target images.
-          Default to 128. For lengths other than 128, the images will be
+      resize_sidelen: the side length of the input and target images.
+          Default to None. If sidelen is an integer, the images will be
           interpolated to the desinated sidelen.
   """
   def __init__(self,
                dataset_name='thick_lines',
                medium_type='gaussian_lens',
-               sidelen=128):
+               resize_sidelen=None):
     super(RtcDataset, self).__init__()
-
-    self.sidelen = sidelen
 
     if dataset_name == 'thick_lines':
       if medium_type in ['gaussian_lens', 'gaussian_random_field']:
         initial_pressure_dataset = np.memmap(
           f'{rtc_dataset}/{medium_type}_initial_pressure_dataset.npy', mode='r',
-          shape=(5000, 512, 512), dtype=np.float32)
+          shape=(5000, 128, 128), dtype=np.float32)
         final_pressure_dataset = np.memmap(
             f'{rtc_dataset}/{medium_type}_final_pressure_dataset.npy', mode='r',
-            shape=(5000, 512, 512), dtype=np.float32)
+            shape=(5000, 128, 128), dtype=np.float32)
       else:
         raise ValueError(f'medium_type {medium_type} not recognized.')
     elif dataset_name == 'mnist':
@@ -52,10 +51,12 @@ class RtcDataset(Dataset):
     source = rearrange(source, 'n h w -> n 1 h w')
     final = rearrange(final, 'n h w -> n 1 h w')
 
-    source = interpolate(source, size=[sidelen, sidelen],
-                        mode='bicubic')
-    final = interpolate(final, size=[sidelen, sidelen],
-                        mode='bicubic')
+    if resize_sidelen is not None:
+      print(f'interpolating images to size {resize_sidelen}')
+      source = interpolate(source, size=[resize_sidelen, resize_sidelen],
+                          mode='bicubic')
+      final = interpolate(final, size=[resize_sidelen, resize_sidelen],
+                          mode='bicubic')
 
     self.source = source
     self.final = final
@@ -78,7 +79,7 @@ def get_dataloaders_rtc_thick_lines(
       num_train_samples=4000,
       num_val_samples=500,
       num_test_samples=500,
-      sidelen=128,
+      resize_sidelen=None,
       num_workers=1):
   """Prepare loaders of the thick line reverse time continuation dataset.
 
@@ -91,7 +92,9 @@ def get_dataloaders_rtc_thick_lines(
       num_train_samples (int): number of training samples.
       num_val_samples (int): number of validation samples.
       num_test_samples (int): number of test samples.
-      sidelen (int, optional): side length of the data. Defaults to 128.
+      resize_sidelen (int or None, optional): If sidelen is an integer,
+          the images will be interpolated to the desinated sidelen.
+          Default to None.
       num_workers (int, optional): number of workders. Defaults to 1.
 
   Returns:
@@ -101,7 +104,7 @@ def get_dataloaders_rtc_thick_lines(
   dataset = RtcDataset(
       dataset_name='thick_lines',
       medium_type=medium_type,
-      sidelen=sidelen,
+      resize_sidelen=resize_sidelen,
       )
 
   assert num_train_samples + num_val_samples + num_test_samples <= len(dataset)
@@ -114,6 +117,15 @@ def get_dataloaders_rtc_thick_lines(
       'train': subsets[0],
       'val': subsets[1],
       'test': subsets[2]}
+
+  # normalizer = UnitGaussianNormalizer(image_datasets['train'].dataset.final)
+
+  # train_mean = image_datasets['train'].dataset.final.mean()
+  # train_std = image_datasets['train'].dataset.final.std()
+
+  # for fold in ['train', 'val', 'test']:
+  #   image_datasets[fold].dataset.final = (
+  #       image_datasets[fold].dataset.final - train_mean) / train_std
 
   batch_sizes = {
       'train': train_batch_size,

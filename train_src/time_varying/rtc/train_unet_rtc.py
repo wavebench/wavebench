@@ -23,7 +23,9 @@ parser.add_argument('--medium_type', type=str, default='gaussian_lens',
 # Training settings
 parser.add_argument('--num_epochs', type=int, default=50,
                     help='number of training epochs.')
-parser.add_argument('--loss_fun_type', type=str, default='relative_l2',
+# parser.add_argument('--loss_fun_type', type=str, default='relative_l2',
+#                     help='the loss function.')
+parser.add_argument('--loss_fun_type', type=str, default='mse',
                     help='the loss function.')
 parser.add_argument('--learning_rate', type=float, default=1e-3,
                     help='learning rate of gradient descent.')
@@ -36,7 +38,7 @@ parser.add_argument('--eta_min', type=float, default=1e-5,
 # DistributedDataParallel settings
 parser.add_argument('--num_workers', type=int, default=20,
                     help='')
-parser.add_argument('--gpu_devices', type=int, nargs='+', default=[0],
+parser.add_argument('--gpu_devices', type=int, nargs='+', default=[1],
                     help='')
 
 
@@ -78,7 +80,7 @@ def main():
     **training_config)
 
   checkpoint_callback = ModelCheckpoint(
-      monitor='val_loss',
+      monitor='val_rel_lp_loss',
       save_top_k=1,
       mode='min')
 
@@ -105,7 +107,7 @@ def main():
 
   trainer.fit(model,
               train_dataloaders=loaders['train'],
-              val_dataloaders=loaders['test'])
+              val_dataloaders=loaders['val'])
 
 
 if __name__ == '__main__':

@@ -10,14 +10,18 @@ function measurements = compute_is_measurements( ...
   medium.density = medium_density;
 
   kgrid.makeTime(medium.sound_speed, 0.3, 0.2);
-  % kgrid.setTime(kgrid.Nt + 1, kgrid.dt);
-  kgrid.setTime(kgrid.Nt, kgrid.dt);
-
+  kgrid.setTime(kgrid.Nt + 1, kgrid.dt);
+  % kgrid.setTime(kgrid.Nt, kgrid.dt);
+  % To make k-wave and j-wave comparable, the k-Wave simulation is run for
+  % one extra time step,
+  % as j-Wave assigns p0 at the beginning of the time loop,
+  % and k-Wave at the end.
 
   source.p0 = initial_pressure;
   sensor.mask = zeros(sidelen, sidelen);
 
-  sensor.mask(pml_size, :) = 1.0;
+  % sensor.mask(pml_size, :) = 1.0;
+  sensor.mask(pml_size+1, :) = 1.0;
   sensor.record = {'p', 'p_final'};
 
   % run the simulation
@@ -26,9 +30,9 @@ function measurements = compute_is_measurements( ...
     'PMLInside', true, ...
     'RecordMovie', false, ...
     'PlotSim', false, ...
-    'PMLSize', pml_size, ...
-    'Smooth', true);
-
+    'PMLSize', pml_size)
+    %  ...
+    % 'Smooth', true);
       % 'PMLInside', false, 'RecordMovie', false);
   measurements = sensor_data.p;
 end

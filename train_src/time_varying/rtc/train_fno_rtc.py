@@ -13,7 +13,7 @@ from wavebench.dataloaders.rtc_loader import get_dataloaders_rtc_thick_lines
 parser = argparse.ArgumentParser(description='FNO training')
 
 # Dataset settings
-parser.add_argument('--batch_size', type=int, default=4,
+parser.add_argument('--batch_size', type=int, default=16,
     help='The mini-batch size for training.')
 parser.add_argument('--medium_type', type=str, default='gaussian_lens',
     help='Can be `gaussian_lens` or `gaussian_random_field`.')
@@ -22,7 +22,9 @@ parser.add_argument('--medium_type', type=str, default='gaussian_lens',
 # Training settings
 parser.add_argument('--num_epochs', type=int, default=50,
                     help='number of training epochs.')
-parser.add_argument('--loss_fun_type', type=str, default='relative_l2',
+# parser.add_argument('--loss_fun_type', type=str, default='relative_l2',
+#                     help='the loss function.')
+parser.add_argument('--loss_fun_type', type=str, default='mse',
                     help='the loss function.')
 parser.add_argument('--learning_rate', type=float, default=1e-3,
                     help='learning rate of gradient descent.')
@@ -78,7 +80,7 @@ def main():
     **training_config)
 
   checkpoint_callback = ModelCheckpoint(
-      monitor='val_loss',
+      monitor='val_rel_lp_loss',
       save_top_k=1,
       mode='min')
 

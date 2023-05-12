@@ -36,12 +36,16 @@ class LitModel(pl.LightningModule):
     self.weight_decay = weight_decay
     self.save_hyperparameters()
 
+    self.mse_loss = torch.nn.MSELoss()
+    self.l1_loss = torch.nn.L1Loss()
+    self.lp_loss = LpLoss(p=2)
+
     if loss_fun_type == 'mse':
-      self.loss_fun = torch.nn.MSELoss()
+      self.loss_fun = self.mse_loss
     elif loss_fun_type == 'l1':
-      self.loss_fun = torch.nn.L1Loss()
+      self.loss_fun = self.l1_loss
     elif loss_fun_type == 'relative_l2':
-      self.loss_fun = LpLoss(p=2)
+      self.loss_fun = self.lp_loss
     else:
       raise ValueError(
         'Unknown loss function type: {}'.format(loss_fun_type))
@@ -62,9 +66,16 @@ class LitModel(pl.LightningModule):
     # pylint:disable=invalid-name
     x, y = batch
     output = self(x)
-    val_loss = self.loss_fun(output, y).detach()
-    self.log("val_loss",
-             val_loss,
+    val_mse_loss = self.mse_loss(output, y).detach()
+    self.log("val_mse_loss",
+             val_mse_loss,
+             on_epoch=True,
+             prog_bar=True,
+             sync_dist=True)
+
+    val_rel_lp_loss = self.lp_loss(output, y).detach()
+    self.log("val_rel_lp_loss",
+             val_rel_lp_loss,
              on_epoch=True,
              prog_bar=True,
              sync_dist=True)

@@ -4,15 +4,13 @@ import ml_collections
 import numpy as np
 import cv2
 import matlab.engine # the matlab engine for python
-import matplotlib.pyplot as plt
-
 import jax
 
 from wavebench import wavebench_path
 from wavebench.generate_data.time_varying.generate_data_is import generate_is
 from wavebench import wavebench_dataset_path
-from wavebench.generate_data.time_varying.gaussian_random_field import generate_gaussian_random_field
-from wavebench.utils import absolute_file_paths, seed_everything
+from wavebench.utils import absolute_file_paths
+from wavebench.plot_utils import plot_images, remove_frame
 
 
 # %%
@@ -20,22 +18,22 @@ thick_lines_data_path = os.path.join(
     wavebench_dataset_path, "time_varying/thick_lines")
 
 config = ml_collections
-config.device_id = 0
 config.save_data = False
+# config.medium_type = 'gaussian_lens'
+config.medium_type = 'gaussian_random_field'
+config.device_id = 0
 
-config.domain_sidelen = 512
-config.domain_dx = 2
+config.domain_sidelen = 128
+config.domain_dx = 8
+# the above seeting gives a domain of 1024 km x 1024 km
 
-config.medium_type = 'gaussian_lens'
-# config.medium_type = 'gaussian_random_field'
-
-config.medium_source_loc = (199, 219)
+config.medium_source_loc = (50, 55)
 config.medium_density = 2650
-config.pml_size = 10
+config.pml_size = 2
 
 #  define the properties of the propagation medium
-min_wavespeed = 1400
-max_wavespeed = 4000
+min_wavespeed = 1400 # [m/s]
+max_wavespeed = 4000 # [m/s]
 point_mass_strength = -31000
 
 if config.medium_type == 'gaussian_lens':
@@ -47,10 +45,16 @@ if config.medium_type == 'gaussian_lens':
       sigmaX=200,
       borderType=cv2.BORDER_REPLICATE)
 elif config.medium_type == 'gaussian_random_field':
-  seed_everything(42)
-  medium_sound_speed = generate_gaussian_random_field(
-      size = config.domain_sidelen,
-      alpha=3.0)
+  medium_sound_speed = np.fromfile(
+    os.path.join(
+      wavebench_dataset_path, "time_varying/wavespeed/cp_128x128_00001.H@"),
+    dtype=np.float32).reshape(128, 128)
+
+  if config.domain_sidelen != 128:
+    medium_sound_speed = jax.image.resize(
+        medium_sound_speed,
+        (config.domain_sidelen, config.domain_sidelen),
+        'bicubic')
 else:
   raise NotImplementedError
 
@@ -90,21 +94,25 @@ kwave_measurements = eng.compute_is_measurements(
   np.double(config.domain_dx),
   resized_initial_pressure,
   np.double(config.pml_size))
-kwave_measurements = np.array(kwave_measurements).T
+kwave_measurements = np.array(kwave_measurements).T[1:, :]
+# To make k-wave and j-wave comparable, the k-Wave simulation was ran for
+# one extra time step; we remove the extra time step here.
+
 
 # %%
 mse = np.mean( (kwave_measurements - jwave_measurements)**2 )
-np.testing.assert_array_less(mse, 1e-4)
 
-# %%
-fig, axes = plt.subplots(1, 3, figsize=(8, 6))
+fig, axes = plot_images(
+  [kwave_measurements,
+   jwave_measurements,
+   np.abs(kwave_measurements - jwave_measurements)],
+  cbar='one',
+  fig_size=(6, 3),
+  cmap='coolwarm')
 
-axes[0].imshow(kwave_measurements)
 axes[0].set_title('kwave')
-axes[1].imshow(jwave_measurements)
 axes[1].set_title('jwave')
-axes[2].imshow(np.abs(kwave_measurements - jwave_measurements))
-axes[2].set_title('diff')
+axes[2].set_title(f'diff mse={mse:.2}')
 
-
+[remove_frame(ax) for ax in axes.flatten()];
 

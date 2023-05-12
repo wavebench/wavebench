@@ -57,8 +57,8 @@ def main():
   model_config = {
     'model_name': 'unet',
     'n_input_channels': 1,
-    'n_output_channels': 1,
-    'channel_reduction_factor': 1}
+    'n_output_channels': 1
+    }
 
   model_name = model_config['model_name']
 
@@ -76,7 +76,7 @@ def main():
     **training_config)
 
   checkpoint_callback = ModelCheckpoint(
-      monitor='val_loss',
+      monitor='val_rel_lp_loss',
       save_top_k=1,
       mode='min')
 
