@@ -3,7 +3,8 @@ import argparse
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import WandbLogger
+
 
 from wavebench import wavebench_path
 from wavebench.nn.pl_model_wrapper import LitModel
@@ -13,7 +14,7 @@ from wavebench.dataloaders.rtc_loader import get_dataloaders_rtc_thick_lines
 parser = argparse.ArgumentParser(description='FNO training')
 
 # Dataset settings
-parser.add_argument('--batch_size', type=int, default=16,
+parser.add_argument('--batch_size', type=int, default=64,
     help='The mini-batch size for training.')
 parser.add_argument('--medium_type', type=str, default='gaussian_lens',
     help='Can be `gaussian_lens` or `gaussian_random_field`.')
@@ -22,9 +23,7 @@ parser.add_argument('--medium_type', type=str, default='gaussian_lens',
 # Training settings
 parser.add_argument('--num_epochs', type=int, default=50,
                     help='number of training epochs.')
-# parser.add_argument('--loss_fun_type', type=str, default='relative_l2',
-#                     help='the loss function.')
-parser.add_argument('--loss_fun_type', type=str, default='mse',
+parser.add_argument('--loss_fun_type', type=str, default='relative_l2',
                     help='the loss function.')
 parser.add_argument('--learning_rate', type=float, default=1e-3,
                     help='learning rate of gradient descent.')
@@ -62,7 +61,9 @@ def main():
     'n_modes_height': 16,
     'hidden_channels': 64,
     'in_channels': 1,
-    'out_channels': 1}
+    'out_channels': 1,
+    'domain_padding': 0.1
+    }
 
   model_name = model_config['model_name']
 
@@ -88,10 +89,13 @@ def main():
 
   model_save_dir = str(wavebench_path + f'/saved_models/{task_name}')
 
-  logger = TensorBoardLogger(
-      model_save_dir,
-      name=model_name,
-      )
+  logger = WandbLogger(
+    name=model_name,
+    save_dir=wavebench_path + '/saved_models/',
+    project=task_name,
+    log_model="all"
+    )
+
   logger.log_hyperparams(model.hparams)
 
   lr_monitor = LearningRateMonitor(logging_interval='step')

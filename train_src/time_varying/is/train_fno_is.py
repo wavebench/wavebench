@@ -3,7 +3,7 @@ import argparse
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import WandbLogger
 
 from wavebench import wavebench_path
 from wavebench.nn.pl_model_wrapper import LitModel
@@ -13,7 +13,7 @@ from wavebench.dataloaders.is_loader import get_dataloaders_is_thick_lines
 parser = argparse.ArgumentParser(description='U-Net training')
 
 # Dataset settings
-parser.add_argument('--batch_size', type=int, default=4,
+parser.add_argument('--batch_size', type=int, default=64,
     help='The mini-batch size for training.')
 parser.add_argument('--medium_type', type=str, default='gaussian_lens',
     help='Can be `gaussian_lens` or `gaussian_random_field`.')
@@ -60,7 +60,9 @@ def main():
     'n_modes_height': 16,
     'hidden_channels': 64,
     'in_channels': 1,
-    'out_channels': 1}
+    'out_channels': 1,
+    'domain_padding': 0.1
+    }
 
   model_name = model_config['model_name']
 
@@ -86,10 +88,12 @@ def main():
 
   model_save_dir = str(wavebench_path + f'/saved_models/{task_name}')
 
-  logger = TensorBoardLogger(
-      model_save_dir,
-      name=model_name,
-      )
+  logger = WandbLogger(
+    name=model_name,
+    save_dir=wavebench_path + '/saved_models/',
+    project=task_name,
+    log_model="all"
+    )
   logger.log_hyperparams(model.hparams)
 
   lr_monitor = LearningRateMonitor(logging_interval='step')
