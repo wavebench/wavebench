@@ -42,7 +42,7 @@ if config.medium_type == 'gaussian_lens':
   medium_sound_speed = cv2.GaussianBlur(
       z,
       ksize=(0, 0),
-      sigmaX=200,
+      sigmaX=50,
       borderType=cv2.BORDER_REPLICATE)
 elif config.medium_type == 'gaussian_random_field':
   medium_sound_speed = np.fromfile(

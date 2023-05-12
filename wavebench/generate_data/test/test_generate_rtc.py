@@ -6,6 +6,7 @@ import cv2
 import matlab.engine # the matlab engine for python
 import jax
 
+import matplotlib.pyplot as plt
 from wavebench.generate_data.time_varying.generate_data_rtc import generate_rtc
 from wavebench import wavebench_dataset_path
 from wavebench.utils import absolute_file_paths
@@ -18,7 +19,8 @@ thick_lines_data_path = os.path.join(
 
 config = ml_collections
 config.save_data = False
-config.medium_type = 'gaussian_random_field' #'gaussian_lens'
+# config.medium_type = 'gaussian_random_field' #'gaussian_lens'
+config.medium_type = 'gaussian_lens'
 config.device_id = 0
 
 
@@ -41,7 +43,7 @@ if config.medium_type == 'gaussian_lens':
   medium_sound_speed = cv2.GaussianBlur(
       z,
       ksize=(0, 0),
-      sigmaX=200,
+      sigmaX=50,
       borderType=cv2.BORDER_REPLICATE)
 elif config.medium_type == 'gaussian_random_field':
   medium_sound_speed = np.fromfile(
@@ -108,6 +110,6 @@ axes[2].set_title(f'diff mse={mse:.2}')
 
 # %%
 
-# plt.imshow(initial_pressure_dataset[0])
+plt.imshow(config.medium_sound_speed, cmap='coolwarm')
 
 # %%

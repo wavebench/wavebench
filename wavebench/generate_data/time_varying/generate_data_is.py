@@ -1,7 +1,7 @@
 """ Generate data for Inverse Source (IS) dataset.
 Example usage:
 python generate_data_is.py \
-  --device_id 0 \
+  --device_id 1 \
   --medium_type gaussian_lens
 
 python generate_data_is.py \
@@ -153,7 +153,7 @@ def main():
     medium_sound_speed = cv2.GaussianBlur(
         z,
         ksize=(0, 0),
-        sigmaX=200,
+        sigmaX=50,
         borderType=cv2.BORDER_REPLICATE)
   elif config.medium_type == 'gaussian_random_field':
     medium_sound_speed = np.fromfile(
