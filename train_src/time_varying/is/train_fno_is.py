@@ -60,13 +60,12 @@ def main():
 
   model_config = {
     'model_name': 'fno',
-    'n_modes_width': 16,
-    'n_modes_height': 16,
-    'hidden_channels': 64,
-    'in_channels': 1,
-    'out_channels': 1,
-    'domain_padding': 0.1,
-    'n_layers': args.num_layers
+    'modes1': 16,
+    'modes2': 16,
+    'hidden_width': 64,
+    'num_in_channels': 1,
+    'num_out_channels': 1,
+    'num_hidden_layer': args.num_layers
     }
 
   model_name = model_config['model_name']
@@ -94,7 +93,7 @@ def main():
   model_save_dir = str(wavebench_path + f'/saved_models/{task_name}')
 
   logger = WandbLogger(
-    name=model_name,
+    name=f'{model_name}_depth_{args.num_layers}',
     save_dir=wavebench_path + '/saved_models/',
     project=task_name,
     log_model="all"

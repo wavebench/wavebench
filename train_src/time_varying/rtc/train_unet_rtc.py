@@ -88,7 +88,7 @@ def main():
 
 
   logger = WandbLogger(
-    name=model_name,
+    name=f'{model_name}_redu_factor_{args.channel_reduction_factor}',
     save_dir=wavebench_path + '/saved_models/',
     project=task_name,
     log_model="all"
