@@ -19,6 +19,10 @@ parser.add_argument('--medium_type', type=str, default='gaussian_lens',
     help='Can be `gaussian_lens` or `gaussian_random_field`.')
 
 
+# Model settings
+parser.add_argument('--num_layers', type=int, default=4,
+    help='Num FNO layers.')
+
 # Training settings
 parser.add_argument('--num_epochs', type=int, default=50,
                     help='number of training epochs.')
@@ -61,7 +65,8 @@ def main():
     'hidden_channels': 64,
     'in_channels': 1,
     'out_channels': 1,
-    'domain_padding': 0.1
+    'domain_padding': 0.1,
+    'n_layers': args.num_layers
     }
 
   model_name = model_config['model_name']

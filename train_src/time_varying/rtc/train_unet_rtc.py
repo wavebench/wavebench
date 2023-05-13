@@ -17,6 +17,9 @@ parser.add_argument('--batch_size', type=int, default=64,
 parser.add_argument('--medium_type', type=str, default='gaussian_lens',
     help='Can be `gaussian_lens` or `gaussian_random_field`.')
 
+# Model settings
+parser.add_argument('--channel_reduction_factor', type=int, default=2,
+    help='Channel redu factor.')
 
 # Training settings
 parser.add_argument('--num_epochs', type=int, default=50,
@@ -57,7 +60,9 @@ def main():
   model_config = {
     'model_name': 'unet',
     'n_input_channels': 1,
-    'n_output_channels': 1}
+    'n_output_channels': 1,
+    'channel_reduction_factor': args.channel_reduction_factor
+    }
 
   model_name = model_config['model_name']
 
