@@ -17,6 +17,7 @@ class RtcDataset(Dataset):
   Args:
       dataset_name (str): can be `thick_lines` or `mnist`.
           Default to `thick_lines`.
+      medium_type (str): can be `gaussian_lens` or `gaussian_random_field`.
       resize_sidelen: the side length of the input and target images.
           Default to None. If sidelen is an integer, the images will be
           interpolated to the desinated sidelen.
@@ -30,15 +31,24 @@ class RtcDataset(Dataset):
     if dataset_name == 'thick_lines':
       if medium_type in ['gaussian_lens', 'gaussian_random_field']:
         initial_pressure_dataset = np.memmap(
-          f'{rtc_dataset}/{medium_type}_initial_pressure_dataset.npy', mode='r',
+          f'{rtc_dataset}/{dataset_name}_{medium_type}_initial_pressure_dataset.npy', mode='r',
           shape=(5000, 128, 128), dtype=np.float32)
         final_pressure_dataset = np.memmap(
-            f'{rtc_dataset}/{medium_type}_final_pressure_dataset.npy', mode='r',
+            f'{rtc_dataset}/{dataset_name}_{medium_type}_final_pressure_dataset.npy', mode='r',
             shape=(5000, 128, 128), dtype=np.float32)
       else:
         raise ValueError(f'medium_type {medium_type} not recognized.')
     elif dataset_name == 'mnist':
-      raise ValueError('mnist is not supported yet')
+      # raise ValueError('mnist is not supported yet')
+      if medium_type in ['gaussian_lens', 'gaussian_random_field']:
+        initial_pressure_dataset = np.memmap(
+          f'{rtc_dataset}/{dataset_name}_{medium_type}_initial_pressure_dataset.npy', mode='r',
+          shape=(50, 128, 128), dtype=np.float32)
+        final_pressure_dataset = np.memmap(
+            f'{rtc_dataset}/{dataset_name}_{medium_type}_final_pressure_dataset.npy', mode='r',
+            shape=(50, 128, 128), dtype=np.float32)
+      else:
+        raise ValueError(f'medium_type {medium_type} not recognized.')
     else:
       raise ValueError('dataset name can be either thick_lines or mnist')
 
@@ -118,15 +128,6 @@ def get_dataloaders_rtc_thick_lines(
       'val': subsets[1],
       'test': subsets[2]}
 
-  # normalizer = UnitGaussianNormalizer(image_datasets['train'].dataset.final)
-
-  # train_mean = image_datasets['train'].dataset.final.mean()
-  # train_std = image_datasets['train'].dataset.final.std()
-
-  # for fold in ['train', 'val', 'test']:
-  #   image_datasets[fold].dataset.final = (
-  #       image_datasets[fold].dataset.final - train_mean) / train_std
-
   batch_sizes = {
       'train': train_batch_size,
       'val': eval_batch_size,
@@ -141,27 +142,32 @@ def get_dataloaders_rtc_thick_lines(
   return dataloaders
 
 
-# def get_dataloaders_rtc_mnist(
-#         sidelen=128,
-#         batch_size=1,
-#         num_workers=1):
-#   """Prepare loaders of the mnist reverse time continuation dataset.
+def get_dataloaders_rtc_mnist(
+        medium_type='gaussian_lens',
+        resize_sidelen=None,
+        batch_size=1,
+        num_workers=1):
+  """Prepare loaders of the mnist reverse time continuation dataset.
 
-#   Args:
-#       batch_size (int, optional): batch size. Defaults to 1.
-#       num_workers (int, optional): number of workers. Defaults to 1.
+  Args:
+      medium_type (str): can be `gaussian_lens` or `gaussian_random_field`.
+      resize_sidelen (int or None, optional): If sidelen is an integer,
+          the images will be interpolated to the desinated sidelen.
+          Default to None.
+      batch_size (int, optional): batch size. Defaults to 1.
+      num_workers (int, optional): number of workers. Defaults to 1.
+  Returns:
+      loader: the data loader.
+  """
+  dataset = RtcDataset(
+      dataset_name='mnist',
+      medium_type=medium_type,
+      resize_sidelen=resize_sidelen,
+      )
 
-#   Returns:
-#       loader: the data loader.
-#   """
-#   dataset = RtcDataset(
-#       sidelen=sidelen,
-#       dataset_name='rtc_mnist',
-#       )
-
-#   loader = DataLoader(
-#       dataset,
-#       batch_size=batch_size,
-#       shuffle=False, pin_memory=True,
-#       num_workers=num_workers)
-#   return loader
+  loader = DataLoader(
+      dataset,
+      batch_size=batch_size,
+      shuffle=False, pin_memory=True,
+      num_workers=num_workers)
+  return loader

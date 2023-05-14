@@ -17,6 +17,7 @@ class IsDataset(Dataset):
   Args:
       dataset_name (str): can be `thick_lines` or `mnist`.
           Default to `thick_lines`.
+      medium_type (str): can be `gaussian_lens` or `gaussian_random_field`.
       resize_sidelen: the side length of the input and target images.
           Default to None. If sidelen is an integer, the images will be
           interpolated to the desinated sidelen.
@@ -30,15 +31,23 @@ class IsDataset(Dataset):
     if dataset_name == 'thick_lines':
       if medium_type in ['gaussian_lens', 'gaussian_random_field']:
         initial_pressure_dataset = np.memmap(
-            f'{is_dataset_dir}/{medium_type}_initial_pressure_dataset.npy',
+            f'{is_dataset_dir}/{dataset_name}_{medium_type}_initial_pressure_dataset.npy',
             mode='r', shape=(5000, 128, 128), dtype=np.float32)
         boundary_measurement_dataset = np.memmap(
-            f'{is_dataset_dir}/{medium_type}_boundary_measurement_dataset.npy',
+            f'{is_dataset_dir}/{dataset_name}_{medium_type}_boundary_measurement_dataset.npy',
             mode='r', shape=(5000, 334, 128), dtype=np.float32)
       else:
         raise ValueError(f'medium_type {medium_type} not recognized.')
     elif dataset_name == 'mnist':
-      raise ValueError('mnist is not supported yet')
+      if medium_type in ['gaussian_lens', 'gaussian_random_field']:
+        initial_pressure_dataset = np.memmap(
+          f'{is_dataset_dir}/{dataset_name}_{medium_type}_initial_pressure_dataset.npy', mode='r',
+          shape=(50, 128, 128), dtype=np.float32)
+        boundary_measurement_dataset = np.memmap(
+            f'{is_dataset_dir}/{dataset_name}_{medium_type}_boundary_measurement_dataset.npy', mode='r',
+            shape=(50, 128, 128), dtype=np.float32)
+      else:
+        raise ValueError(f'medium_type {medium_type} not recognized.')
     else:
       raise ValueError('dataset name can be either thick_lines or mnist')
 
@@ -136,3 +145,32 @@ def get_dataloaders_is_thick_lines(
           num_workers=num_workers) for x in ['train', 'test']}
   return dataloaders
 
+def get_dataloaders_is_mnist(
+        medium_type='gaussian_lens',
+        resize_sidelen=None,
+        batch_size=1,
+        num_workers=1):
+  """Prepare loaders of the mnist inverse source dataset.
+
+  Args:
+      medium_type (str): can be `gaussian_lens` or `gaussian_random_field`.
+      resize_sidelen (int or None, optional): If sidelen is an integer,
+          the images will be interpolated to the desinated sidelen.
+          Default to None.
+      batch_size (int, optional): batch size. Defaults to 1.
+      num_workers (int, optional): number of workers. Defaults to 1.
+  Returns:
+      loader: the data loader.
+  """
+  dataset = IsDataset(
+      dataset_name='mnist',
+      medium_type=medium_type,
+      resize_sidelen=resize_sidelen,
+      )
+
+  loader = DataLoader(
+      dataset,
+      batch_size=batch_size,
+      shuffle=False, pin_memory=True,
+      num_workers=num_workers)
+  return loader

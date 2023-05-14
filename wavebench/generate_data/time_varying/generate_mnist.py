@@ -12,7 +12,7 @@ from torchvision import datasets
 from wavebench import wavebench_dataset_path
 
 mnist_data_path = os.path.join(wavebench_dataset_path, "time_varying/mnist")
-num_data = 100
+num_data = 50
 
 if not os.path.exists(mnist_data_path):
   # Save a few MNIST test data as pngs
