@@ -126,6 +126,8 @@ def plot_images(x_list, nrows=1, ncols=-1, fig=None, vrange='equal',
   ax : ndarray of :class:`matplotlib.axes.Axes`
       The axes the images were plotted in.
   """
+  cbar_shrink = kwargs.pop('shrink', 1.0)
+  cbar_pad = kwargs.pop('pad', 0.04)
   try:
     x_list = list(x_list)
   except TypeError:
@@ -178,9 +180,13 @@ def plot_images(x_list, nrows=1, ncols=-1, fig=None, vrange='equal',
     im_, _ = plot_image(x, ax=ax_, vmin=v[0], vmax=v[1], **kwargs)
     im.flat[i] = im_
     if cbar == 'many':
-      fig.colorbar(im_, ax=ax_, fraction=0.046, pad=0.04)
+      # fig.colorbar(im_, ax=ax_, fraction=0.046, pad=0.04, shrink=0.5)
+      fig.colorbar(im_, ax=ax_, pad=cbar_pad, shrink=cbar_shrink)
+
   if cbar == 'one':
-    fig.colorbar(im[0], ax=ax, fraction=0.046, pad=0.04)
+    # fig.colorbar(im[0], ax=ax, fraction=0.046, pad=0.04, shrink=0.5)
+    fig.colorbar(im[0], ax=ax, pad=cbar_pad, shrink=cbar_shrink)
+
   return im, ax
 
 

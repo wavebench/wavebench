@@ -22,5 +22,6 @@ if not os.path.exists(mnist_data_path):
 
   for k in tqdm(range(num_data)):
     f = np.array(mnist_test_dataset.data[k])
+    # f = np.pad(mnist_test_dataset.data[k], 2, 'constant', constant_values=0)
     imageio.imwrite(
         os.path.join(f'{mnist_data_path}/{k}.png'), f)

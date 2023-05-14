@@ -7,6 +7,7 @@ import numpy as np
 from einops import rearrange
 from wavebench import wavebench_dataset_path
 
+# import matplotlib.pyplot as plt
 
 is_dataset_dir = os.path.join(wavebench_dataset_path, "time_varying/is/")
 
@@ -45,7 +46,7 @@ class IsDataset(Dataset):
           shape=(50, 128, 128), dtype=np.float32)
         boundary_measurement_dataset = np.memmap(
             f'{is_dataset_dir}/{dataset_name}_{medium_type}_boundary_measurement_dataset.npy', mode='r',
-            shape=(50, 128, 128), dtype=np.float32)
+            shape=(50, 334, 128), dtype=np.float32)
       else:
         raise ValueError(f'medium_type {medium_type} not recognized.')
     else:
@@ -72,6 +73,7 @@ class IsDataset(Dataset):
         measurements,
         size=[initial.shape[-1], initial.shape[-2]],
         mode='nearest')
+
     self.measurements = measurements
     self.initial = initial
     self.len = measurements.shape[0]

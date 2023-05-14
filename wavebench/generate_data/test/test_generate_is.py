@@ -69,7 +69,7 @@ config.medium_sound_speed = medium_sound_speed*(
 max_wavespeed - min_wavespeed) + min_wavespeed
 
 # only a single example is generated
-config.source_list = sorted(absolute_file_paths(data_path))[:1]
+config.source_list = sorted(absolute_file_paths(data_path))[1:2]
 initial_pressure_dataset, boundary_measurement_dataset = generate_is(config)
 jwave_measurements = boundary_measurement_dataset[0]
 
@@ -121,3 +121,21 @@ axes[2].set_title(f'diff mse={mse:.2}')
 [remove_frame(ax) for ax in axes.flatten()];
 
 
+
+# %%
+
+import matplotlib.pyplot as plt
+from torch.nn.functional import interpolate
+import torch
+
+# plt.figure()
+# plt.imshow(resized_initial_pressure)
+
+plt.figure()
+measurements = interpolate(
+    torch.from_numpy(jwave_measurements).unsqueeze(0).unsqueeze(0),
+    size=[128, 128],
+    mode='nearest').squeeze()
+plt.imshow(measurements)
+
+# %%
