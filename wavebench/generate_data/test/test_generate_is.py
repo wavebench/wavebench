@@ -14,13 +14,13 @@ from wavebench.plot_utils import plot_images, remove_frame
 
 
 # %%
-thick_lines_data_path = os.path.join(
-    wavebench_dataset_path, "time_varying/thick_lines")
 
 config = ml_collections
 config.save_data = False
-# config.medium_type = 'gaussian_lens'
-config.medium_type = 'gaussian_random_field'
+# config.initial_pressure_type = 'thick_lines'
+config.initial_pressure_type = 'mnist'
+config.medium_type = 'gaussian_lens'
+# config.medium_type = 'gaussian_random_field'
 config.device_id = 0
 
 config.domain_sidelen = 128
@@ -35,6 +35,10 @@ config.pml_size = 2
 min_wavespeed = 1400 # [m/s]
 max_wavespeed = 4000 # [m/s]
 point_mass_strength = -31000
+
+data_path = os.path.join(
+    wavebench_dataset_path,
+    f"time_varying/{config.initial_pressure_type}")
 
 if config.medium_type == 'gaussian_lens':
   z = np.ones((config.domain_sidelen,config.domain_sidelen))
@@ -65,7 +69,7 @@ config.medium_sound_speed = medium_sound_speed*(
 max_wavespeed - min_wavespeed) + min_wavespeed
 
 # only a single example is generated
-config.source_list = sorted(absolute_file_paths(thick_lines_data_path))[:1]
+config.source_list = sorted(absolute_file_paths(data_path))[:1]
 initial_pressure_dataset, boundary_measurement_dataset = generate_is(config)
 jwave_measurements = boundary_measurement_dataset[0]
 
@@ -115,4 +119,5 @@ axes[1].set_title('jwave')
 axes[2].set_title(f'diff mse={mse:.2}')
 
 [remove_frame(ax) for ax in axes.flatten()];
+
 

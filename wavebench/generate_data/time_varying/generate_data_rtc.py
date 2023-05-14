@@ -3,10 +3,22 @@
 Example usage:
 python generate_data_rtc.py \
   --device_id 0 \
+  --initial_pressure_type thick_lines \
   --medium_type gaussian_lens
 
 python generate_data_rtc.py \
   --device_id 0 \
+  --initial_pressure_type thick_lines \
+  --medium_type gaussian_random_field
+
+python generate_data_rtc.py \
+  --device_id 0 \
+  --initial_pressure_type mnist \
+  --medium_type gaussian_lens
+
+python generate_data_rtc.py \
+  --device_id 0 \
+  --initial_pressure_type mnist \
   --medium_type gaussian_random_field
 """
 
@@ -61,12 +73,12 @@ def generate_rtc(config):
   if config.save_data:
     # https://vmascagn.web.cern.ch/vmascagn/LABO_2020/numpy-memmap_for_ghost_imaging.html
     initial_pressure_dataset = np.memmap(
-        f'{rtc_dataset}/{config.medium_type}_initial_pressure_dataset.npy',
+        f'{rtc_dataset}/{config.initial_pressure_type}_{config.medium_type}_initial_pressure_dataset.npy',  # pylint: disable=line-too-long
         mode='w+',
         shape=(num_data, config.domain_sidelen, config.domain_sidelen),
             dtype=np.float32)
     final_pressure_dataset = np.memmap(
-        f'{rtc_dataset}/{config.medium_type}_final_pressure_dataset.npy',
+        f'{rtc_dataset}/{config.initial_pressure_type}_{config.medium_type}_final_pressure_dataset.npy',  # pylint: disable=line-too-long
         mode='w+',
         shape=(num_data, config.domain_sidelen, config.domain_sidelen),
             dtype=np.float32)
@@ -94,17 +106,14 @@ def generate_rtc(config):
   return initial_pressure_dataset, final_pressure_dataset
 
 
-thick_lines_data_path = os.path.join(
-    wavebench_dataset_path, "time_varying/thick_lines")
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--medium_type', type=str, default='gaussian_lens',
                     help='Can be `gaussian_lens` or `gaussian_random_field`.')
+parser.add_argument('--initial_pressure_type', type=str, default='thick_lines',
+                    help='Can be `thick_lines` or `mnist`.')
 parser.add_argument('--device_id', type=int, default=0)
 parser.add_argument('--save_data', default=True,
                     type=lambda x: (str(x).lower() == 'true'))
-
 
 def main():
 
@@ -114,7 +123,10 @@ def main():
   config.medium_type = args.medium_type
   config.device_id = args.device_id
   config.save_data = args.save_data
+  config.data_path = os.path.join(
+    wavebench_dataset_path, f"time_varying/{args.initial_pressure_type}")
 
+  config.initial_pressure_type = args.initial_pressure_type
   config.domain_sidelen = 128
   config.domain_dx = 8
   # the above seetings give a domain of 1024 km x 1024 km
@@ -155,7 +167,7 @@ def main():
   config.medium_sound_speed = medium_sound_speed*(
   max_wavespeed - min_wavespeed) + min_wavespeed
 
-  config.source_list = sorted(absolute_file_paths(thick_lines_data_path))#[:10]
+  config.source_list = sorted(absolute_file_paths(config.data_path))#[:10]
   print(f'Number of sources: {len(config.source_list)}')
   generate_rtc(config)
 

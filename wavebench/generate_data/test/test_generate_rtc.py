@@ -14,12 +14,13 @@ from wavebench import wavebench_path
 from wavebench.plot_utils import plot_images, remove_frame
 
 # %%
-thick_lines_data_path = os.path.join(
-    wavebench_dataset_path, "time_varying/thick_lines")
 
 config = ml_collections
+# config.initial_pressure_type = 'thick_lines'
+config.initial_pressure_type = 'mnist'
+
 config.save_data = False
-# config.medium_type = 'gaussian_random_field' #'gaussian_lens'
+# config.medium_type = 'gaussian_random_field'
 config.medium_type = 'gaussian_lens'
 config.device_id = 0
 
@@ -36,6 +37,14 @@ config.pml_size = 2
 min_wavespeed = 1400 # [m/s]
 max_wavespeed = 4000 # [m/s]
 point_mass_strength = -31000
+
+# thick_lines_data_path = os.path.join(
+#     wavebench_dataset_path, "time_varying/thick_lines")
+
+data_path = os.path.join(
+    wavebench_dataset_path,
+    f"time_varying/{config.initial_pressure_type}")
+
 
 if config.medium_type == 'gaussian_lens':
   z = np.ones((config.domain_sidelen,config.domain_sidelen))
@@ -66,7 +75,7 @@ config.medium_sound_speed = medium_sound_speed*(
 max_wavespeed - min_wavespeed) + min_wavespeed
 
 # only a single example is generated
-config.source_list = sorted(absolute_file_paths(thick_lines_data_path))[:1]#[82:83]
+config.source_list = sorted(absolute_file_paths(data_path))[:1]#[82:83]
 initial_pressure_dataset, final_pressure_dataset = generate_rtc(config)
 jwave_final_pressure = final_pressure_dataset[0]
 
