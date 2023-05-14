@@ -13,7 +13,7 @@ from wavebench.dataloaders.is_loader import get_dataloaders_is_thick_lines
 parser = argparse.ArgumentParser(description='U-Net training')
 
 # Dataset settings
-parser.add_argument('--batch_size', type=int, default=64,
+parser.add_argument('--batch_size', type=int, default=32,
     help='The mini-batch size for training.')
 parser.add_argument('--medium_type', type=str, default='gaussian_lens',
     help='Can be `gaussian_lens` or `gaussian_random_field`.')

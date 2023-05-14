@@ -124,7 +124,7 @@ class FNO2d(nn.Module):
                num_out_channels=1,
                lifting_channels=128,
                projection_channels=128,
-               num_hidden_layer = 4):
+               num_hidden_layers = 4):
     super(FNO2d, self).__init__()
 
     self.num_in_channels = num_in_channels
@@ -143,7 +143,7 @@ class FNO2d(nn.Module):
     )
 
     hidden_layers = []
-    for _ in range(num_hidden_layer):
+    for _ in range(num_hidden_layers):
       hidden_layers.append(
         FourierLayer2d(self.hidden_width, self.hidden_width, modes1, modes2))
     self.hidden_layers = nn.Sequential(*hidden_layers)
