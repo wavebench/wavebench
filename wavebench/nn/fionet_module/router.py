@@ -129,7 +129,7 @@ class SirenRouter(nn.Module):
         use_bias=use_bias, final_activation=final_activation)
 
     self.image_sidelen = image_sidelen
-    self.ds_image_sidelen = image_sidelen // downsample_factor
+    self.ds_image_sidelen = image_sidelen // self.downsample_factor
     self.num_ds_coords = self.ds_image_sidelen * self.ds_image_sidelen
 
     tensors = [torch.linspace(-1, 1, steps=self.ds_image_sidelen),

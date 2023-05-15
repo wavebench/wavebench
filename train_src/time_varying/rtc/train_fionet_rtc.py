@@ -2,10 +2,9 @@
 import argparse
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
-from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.loggers import TensorBoardLogger #WandbLogger
 
 from wavebench import wavebench_path
-# from wavebench.nn.pl_model_wrapper import LitModel
 from wavebench.nn.fionet_module.pl_fionet import LitFIONet
 from wavebench.dataloaders.rtc_loader import get_dataloaders_rtc_thick_lines
 
@@ -13,13 +12,13 @@ from wavebench.dataloaders.rtc_loader import get_dataloaders_rtc_thick_lines
 parser = argparse.ArgumentParser(description='FIONet training')
 
 # Dataset settings
-parser.add_argument('--batch_size', type=int, default=4,
+parser.add_argument('--batch_size', type=int, default=32,
     help='The mini-batch size for training.')
 parser.add_argument('--medium_type', type=str, default='gaussian_lens',
     help='Can be `gaussian_lens` or `gaussian_random_field`.')
 
 # Model settings
-parser.add_argument('--channel_reduction_factor', type=int, default=2,
+parser.add_argument('--channel_reduction_factor', type=int, default=1,
     help='Channel redu factor.')
 
 # Training settings
@@ -27,9 +26,9 @@ parser.add_argument('--num_epochs', type=int, default=100,
                     help='number of training epochs.')
 parser.add_argument('--loss_fun_type', type=str, default='relative_l2',
                     help='the loss function.')
-parser.add_argument('--learning_rate', type=float, default=1e-3,
+parser.add_argument('--learning_rate', type=float, default=1e-4,
                     help='learning rate of gradient descent.')
-parser.add_argument('--weight_decay', type=float, default=1e-5)
+parser.add_argument('--weight_decay', type=float, default=0.0)
 parser.add_argument('--eta_min', type=float, default=1e-5,
                     help='the eta_min for CosineAnnealingLR decay.')
 
@@ -60,10 +59,11 @@ def main():
 
   model_config = {
     'use_two_routers': True,
-    'sidelen': 128,
+    'router_sidelen': 64,
     'siren_latent_dim': 128,
     'n_output_channels': 1,
-    'siren_num_layers': 3,
+    'siren_num_layers': 5,
+    'router_use_curvelet_scales': True,
     'unet_channel_redu_factor': args.channel_reduction_factor
     }
 
@@ -90,12 +90,18 @@ def main():
   task_name = f'rtc_{args.medium_type}'
 
 
-  logger = WandbLogger(
-    name=f'{model_name}_redu_factor_{args.channel_reduction_factor}',
-    save_dir=wavebench_path + '/saved_models/',
-    project=task_name,
-    log_model="all"
-    )
+  # logger = WandbLogger(
+  #   name=f'{model_name}_redu_factor_{args.channel_reduction_factor}',
+  #   save_dir=wavebench_path + '/saved_models/',
+  #   project=task_name,
+  #   log_model="all"
+  #   )
+
+  logger = TensorBoardLogger(
+      wavebench_path + '/saved_models/',
+      name=task_name,
+      default_hp_metric=False
+      )
 
   logger.log_hyperparams(model.hparams)
 
@@ -107,7 +113,7 @@ def main():
     accelerator='gpu',
     max_epochs=args.num_epochs,
     callbacks=[checkpoint_callback, lr_monitor],
-    # default_root_dir=model_save_dir + '/' + task_name,
+    default_root_dir=wavebench_path + '/saved_models/' + task_name,
     )
 
   trainer.fit(model,

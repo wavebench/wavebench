@@ -1,18 +1,19 @@
 """FIONet"""
 # import functorch
+import warnings
 import torchfields  # pylint: disable=unused-import # noqa: F401
 from torch import nn
-import warnings
 from einops.layers.torch import Reduce
 from wavebench.nn.fionet_module.router import SirenRouter
 from wavebench.nn.fionet_module.curvelet import CurveletDecomp
 from wavebench.nn import unet
 
+
 class FIONet(nn.Module):
   """The FioNet module"""
   def __init__(
       self,
-      sidelen,
+      router_sidelen,
       n_output_channels=1,
       use_two_routers=False,
       router_use_curvelet_scales=False,
@@ -34,9 +35,11 @@ class FIONet(nn.Module):
       out_op = 'conv'
 
     self.use_two_routers = use_two_routers
-    self.sidelen = sidelen
+    self.router_sidelen = router_sidelen
+    self.keep_only_curvelet_middle_scales = keep_only_curvelet_middle_scales
+
     self.decomposer = CurveletDecomp(
-        sidelen,
+        router_sidelen,
         use_only_middle_scales=keep_only_curvelet_middle_scales)
     self.num_curvelets = self.decomposer.curvelet_directions.shape[0]
 
@@ -67,13 +70,13 @@ class FIONet(nn.Module):
         }
 
     self.router_1 = SirenRouter(
-        image_sidelen=sidelen,
+        image_sidelen=router_sidelen,
         **siren_params
     )
 
     if use_two_routers:
       self.router_2 = SirenRouter(
-          image_sidelen=sidelen,
+          image_sidelen=router_sidelen,
           **siren_params
       )
 
@@ -82,13 +85,80 @@ class FIONet(nn.Module):
         self.num_curvelets,
         channel_reduction_factor=unet_channel_redu_factor
         )
+    self.freeze_unet()
 
-    if out_op == 'conv':
-      nn.Conv2d(self.num_curvelets, 1, kernel_size=1)
+    if out_op == 'conv1x1':
+      self.out_synthesizer = nn.Conv2d(
+        self.num_curvelets, n_output_channels, kernel_size=1)
+    elif out_op == 'mlp':
+      self.out_synthesizer = nn.Sequential(
+      nn.Conv2d(self.num_curvelets, 4, kernel_size=5, padding='same'),
+      nn.LeakyReLU(),
+      nn.Conv2d(4, n_output_channels, kernel_size=1, padding='same')
+      )
     elif out_op == 'sum':
       self.out_synthesizer = Reduce('b c h w -> b 1 h w', 'sum')
     else:
-      raise ValueError('out op can only be `conv`, or `sum`')
+      raise ValueError('out op can only be `conv1x1`, `mlp`, or `sum`')
+
+  def route_bands(self, x_bands):
+    """Route the bands of the input image
+    Args:
+        x_bands (torch.FloatTensor): the bands of the input image
+            that has the size [batchsize, num_curvelets, sidelen, sidelen]
+
+    Returns:
+        warped_bands (torch.FloatTensor): the warped bands of the
+            input image that has the size
+            [batchsize, num_curvelets, sidelen, sidelen]
+    """
+    warped_bands = self.router_1.warp(self.router_input, x_bands)
+
+    if self.use_two_routers:
+      warped_bands = warped_bands + self.router_2.warp(
+          self.router_input, warped_bands)
+
+    return warped_bands
+
+
+  def forward(self, x, router_only: bool):
+    # pylint: disable=invalid-name
+    """Forward pass of the FioNet
+    Args:
+        x (torch.FloatTensor): FioNet input that has
+            the size [batchsize, 1, sidelen, sidelen].
+
+    Returns:
+        out (torch.FloatTensor): FioNet output
+    """
+    _, _, h, w = x.shape
+
+    if (h, w) != (self.router_sidelen, self.router_sidelen):
+      x = nn.functional.interpolate(
+        x, size = (self.router_sidelen, self.router_sidelen),
+        mode='bicubic', align_corners=True)
+
+    x_bands = self.decomposer(x)
+    # [batchsize, num_curvelets, sidelen, sidelen].
+
+    if router_only:
+      warped_bands = self.route_bands(x_bands)
+    else:
+      x_bands = self.unet(x_bands)
+      warped_bands = self.route_bands(x_bands)
+
+
+    if (h, w) != (self.router_sidelen, self.router_sidelen):
+      warped_bands = nn.functional.interpolate(
+        warped_bands,
+        size = (h, w),
+        mode='bicubic',
+        align_corners=True)
+
+    out = self.out_synthesizer(warped_bands)
+    out = self.out_activation(out)
+    # [batchsize, 1, sidelen, sidelen]
+    return out
 
   def freeze_unet(self):
     """Freeze the UNet"""
@@ -115,46 +185,3 @@ class FIONet(nn.Module):
     if self.use_two_routers:
       for param in self.router_2.parameters():
         param.requires_grad = True
-
-  def route_bands(self, x_bands):
-    """Route the bands of the input image
-    Args:
-        x_bands (torch.FloatTensor): the bands of the input image
-            that has the size [batchsize, num_curvelets, sidelen, sidelen]
-
-    Returns:
-        warped_bands (torch.FloatTensor): the warped bands of the
-            input image that has the size
-            [batchsize, num_curvelets, sidelen, sidelen]
-    """
-    warped_bands = self.router_1.warp(self.router_input, x_bands)
-
-    if self.use_two_routers:
-      warped_bands = warped_bands + self.router_2.warp(
-          self.router_input, warped_bands)
-
-    return warped_bands
-
-  def forward(self, x, router_only: bool):
-    # pylint: disable=invalid-name
-    """Forward pass of the FioNet
-    Args:
-        x (torch.FloatTensor): FioNet input that has
-            the size [batchsize, 1, sidelen, sidelen].
-
-    Returns:
-        out (torch.FloatTensor): FioNet output
-    """
-    x_bands = self.decomposer(x)
-    # [batchsize, num_curvelets, sidelen, sidelen].
-
-    if router_only:
-      warped_bands = self.route_bands(x_bands)
-    else:
-      x_bands = self.unet(x_bands)
-      warped_bands = self.route_bands(x_bands)
-
-    out = self.out_synthesizer(warped_bands)
-    out = self.out_activation(out)
-    # [batchsize, 1, sidelen, sidelen]
-    return out
