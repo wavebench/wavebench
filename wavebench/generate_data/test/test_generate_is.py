@@ -17,8 +17,8 @@ from wavebench.plot_utils import plot_images, remove_frame
 
 config = ml_collections
 config.save_data = False
-# config.initial_pressure_type = 'thick_lines'
-config.initial_pressure_type = 'mnist'
+config.initial_pressure_type = 'thick_lines'
+# config.initial_pressure_type = 'mnist'
 config.medium_type = 'gaussian_lens'
 # config.medium_type = 'gaussian_random_field'
 config.device_id = 0

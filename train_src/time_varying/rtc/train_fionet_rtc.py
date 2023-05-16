@@ -59,7 +59,7 @@ def main():
 
   model_config = {
     'use_two_routers': True,
-    'router_sidelen': 64,
+    'router_sidelen': 32,
     'siren_latent_dim': 128,
     'n_output_channels': 1,
     'siren_num_layers': 5,

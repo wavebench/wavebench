@@ -16,7 +16,7 @@ class LitFIONet(pl.LightningModule):
               unet_channel_redu_factor=2,
               router_sidelen=128,
               n_output_channels=1,
-              siren_latent_dim=512,
+              siren_latent_dim=128,
               siren_num_layers=5,
               siren_omega=30.,
               siren_c=6.,
@@ -51,6 +51,11 @@ class LitFIONet(pl.LightningModule):
     self.model.freeze_unet()
 
     self.max_num_steps = max_num_steps
+    self.num_single_stage_steps = max_num_steps // 3
+
+    self.stage_2_staring_step = self.num_single_stage_steps
+    self.stage_3_staring_step = 2 * self.num_single_stage_steps
+
     self.eta_min = eta_min
     self.learning_rate = learning_rate
     self.weight_decay = weight_decay
@@ -77,16 +82,14 @@ class LitFIONet(pl.LightningModule):
     # pylint: disable=arguments-differ, unused-argument, invalid-name
     x, y = batch
 
-    if self.global_step == self.max_num_steps // 3:
+    if self.global_step == self.stage_2_staring_step:
+      self.model.update_router_sidelen(router_sidelen=128)
+    elif self.global_step == self.stage_3_staring_step:
       self.model.unfreeze_unet()
       self.model.freeze_router()
       print(f'Unfreezing UNet & Freezing router at step {self.global_step}.')
 
-    if self.global_step == 2 * self.max_num_steps // 3:
-      self.model.unfreeze_router()
-      print(f'Unfreezing router at step {self.global_step}.')
-
-    router_only = self.global_step < self.max_num_steps // 3
+    router_only = self.global_step < self.stage_3_staring_step
     output = self.model(
       x,
       router_only=router_only)
@@ -107,7 +110,7 @@ class LitFIONet(pl.LightningModule):
     x, y = batch
     output = self.model(
       x,
-      router_only=self.trainer.global_step < self.max_num_steps // 3)
+      router_only=self.global_step < self.stage_3_staring_step)
 
     val_mse_loss = self.mse_loss(output, y).detach()
     self.log("val_mse_loss",
@@ -134,7 +137,7 @@ class LitFIONet(pl.LightningModule):
     sched_config = {
         'scheduler': torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer,
-        T_0=self.max_num_steps // 3,
+        T_0=self.num_single_stage_steps,
         T_mult=1,
         eta_min=self.eta_min),
         'interval': 'step',

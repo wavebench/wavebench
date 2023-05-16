@@ -35,9 +35,9 @@ class FIONet(nn.Module):
       out_op = 'conv'
 
     self.use_two_routers = use_two_routers
-    self.router_sidelen = router_sidelen
     self.keep_only_curvelet_middle_scales = keep_only_curvelet_middle_scales
 
+    self.router_sidelen = router_sidelen
     self.decomposer = CurveletDecomp(
         router_sidelen,
         use_only_middle_scales=keep_only_curvelet_middle_scales)
@@ -66,17 +66,15 @@ class FIONet(nn.Module):
         'num_layers': siren_num_layers,
         'w0': siren_omega,
         'c': siren_c,
-        'w0_initial': siren_omega
+        'w0_initial': siren_omega,
         }
 
     self.router_1 = SirenRouter(
-        image_sidelen=router_sidelen,
         **siren_params
     )
 
     if use_two_routers:
       self.router_2 = SirenRouter(
-          image_sidelen=router_sidelen,
           **siren_params
       )
 
@@ -100,6 +98,15 @@ class FIONet(nn.Module):
       self.out_synthesizer = Reduce('b c h w -> b 1 h w', 'sum')
     else:
       raise ValueError('out op can only be `conv1x1`, `mlp`, or `sum`')
+
+
+  def update_router_sidelen(self, router_sidelen):
+    device = self.decomposer.curvelet_directions.device
+    self.router_sidelen = router_sidelen
+    self.decomposer = CurveletDecomp(
+        router_sidelen,
+        use_only_middle_scales=self.keep_only_curvelet_middle_scales).to(device)
+    return None
 
   def route_bands(self, x_bands):
     """Route the bands of the input image
@@ -143,10 +150,10 @@ class FIONet(nn.Module):
 
     if router_only:
       warped_bands = self.route_bands(x_bands)
+
     else:
       x_bands = self.unet(x_bands)
       warped_bands = self.route_bands(x_bands)
-
 
     if (h, w) != (self.router_sidelen, self.router_sidelen):
       warped_bands = nn.functional.interpolate(

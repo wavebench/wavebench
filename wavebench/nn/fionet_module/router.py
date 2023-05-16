@@ -111,14 +111,14 @@ class SirenNet(nn.Module):
 
 class SirenRouter(nn.Module):
   """ Siren router """
-  def __init__(self, image_sidelen,
-              dim_in, dim_hidden, dim_out, num_layers,
-              downsample_factor=1,
+  def __init__(self,
+              dim_in, dim_hidden,
+              dim_out,
+              num_layers,
               c=6., w0=1., w0_initial=30.,
               use_bias=True, final_activation=None):
     super().__init__()
 
-    self.downsample_factor = downsample_factor
     self.net = SirenNet(
         dim_in=dim_in,
         dim_hidden=dim_hidden,
@@ -126,42 +126,46 @@ class SirenRouter(nn.Module):
         num_layers=num_layers,
         c=c,
         w0=w0, w0_initial=w0_initial,
-        use_bias=use_bias, final_activation=final_activation)
+        use_bias=use_bias,
+        final_activation=final_activation)
 
-    self.image_sidelen = image_sidelen
-    self.ds_image_sidelen = image_sidelen // self.downsample_factor
-    self.num_ds_coords = self.ds_image_sidelen * self.ds_image_sidelen
-
-    tensors = [torch.linspace(-1, 1, steps=self.ds_image_sidelen),
-                torch.linspace(-1, 1, steps=self.ds_image_sidelen)]
-    mgrid = torch.stack(torch.meshgrid(*tensors, indexing='ij'), dim=-1)
+  def get_mgrid(self, image_sidelen):
+    tensors = [torch.linspace(-1, 1, steps=image_sidelen),
+                torch.linspace(-1, 1, steps=image_sidelen)]
+    mgrid = torch.stack(
+      torch.meshgrid(*tensors, indexing='ij'), dim=-1)
     mgrid = rearrange(mgrid, 'h w c -> (h w) c')
-    self.register_buffer('mgrid', mgrid)
+    return mgrid
 
-  def forward_single_latent(self, latent):
-    '''fowrad pass on a single latent vector'''
-    # concat the fixed grid and the input latents
-    repeated_latents = repeat(latent, 'd -> c d',
-                              c=self.num_ds_coords)
-
-    coords_and_latents = torch.cat((self.mgrid, repeated_latents), 1)
-
-    out = self.net(coords_and_latents)
-
-    out = rearrange(out, '(h w) c -> c h w',
-                    h=self.ds_image_sidelen,
-                    w=self.ds_image_sidelen)
-    return out
-
-  def forward(self, latents):
+  def forward(self, latents, image_sidelen):
     '''foward pass on a multiple latent vectors
         of dim (num_latents, dim_latents)
     '''
-    out = torch.vmap(self.forward_single_latent)(latents)
-    out = F.interpolate(out, size=(self.image_sidelen, self.image_sidelen))
+
+    mgrid = self.get_mgrid(image_sidelen).to(latents.device)
+    num_coords = image_sidelen * image_sidelen
+
+    def forward_single_latent(latent):
+      '''fowrad pass on a single latent vector'''
+      # concat the fixed grid and the input latents
+      repeated_latents = repeat(latent, 'd -> c d',
+                                c=num_coords)
+
+      coords_and_latents = torch.cat(
+        (mgrid, repeated_latents), 1)
+
+      out = self.net(coords_and_latents)
+
+      out = rearrange(
+        out, '(h w) c -> c h w',
+        h=image_sidelen,
+        w=image_sidelen)
+      return out
+
+    out = torch.vmap(forward_single_latent)(latents)
     return out
 
-  def get_resampling_mapping(self, latents):
+  def get_resampling_mapping(self, latents, image_sidelen):
     """Get the resampling mapping.
     The resampling mapping is a tensor that has the shape
     [num_curvelets, 2, sidelen, sidelen]. The value [-1, -1] corresponds
@@ -170,26 +174,29 @@ class SirenRouter(nn.Module):
     bounds.
     """
     # output resampling mapping from the router
-    resampling_mapping = self.forward(latents).field()
+    resampling_mapping = self.forward(latents, image_sidelen).field()
 
     return resampling_mapping
 
-  def get_displacement_fields(self, latents):
-    """Get the displacement vector field.
-    The displacement vector field is a tensor has the shape
-    [num_curvelets, 2, sidelen, sidelen].
-    """
-    # convert from resampling mapping (predicted by the router)
-    # to displacement_fields
-    resampling_mapping = self.get_resampling_mapping(latents)
-    displacement_fields = resampling_mapping.from_mapping()
-    return displacement_fields
 
   def warp(self, latents, x):  # pylint: disable=invalid-name
     """Warp the grid that underlies the input"""
+
     x = rearrange(x, '... c h w -> ... c 1 h w')
-    warper = torch.vmap(
-        self.get_displacement_fields(latents).sample)
+    image_sidelen = x.shape[-1]
+
+    def get_displacement_fields(latents):
+      """Get the displacement vector field.
+      The displacement vector field is a tensor has the shape
+      [num_curvelets, 2, sidelen, sidelen].
+      """
+      # convert from resampling mapping (predicted by the router)
+      # to displacement_fields
+      resampling_mapping = self.get_resampling_mapping(latents, image_sidelen)
+      displacement_fields = resampling_mapping.from_mapping()
+      return displacement_fields
+
+    warper = torch.vmap(get_displacement_fields(latents).sample)
     out = warper(x)  # in shape [..., c, 1, h, w]
     out = rearrange(out, '... c 1 h w -> ... c h w')
     return out
