@@ -5,6 +5,11 @@ from torch.utils.data import Dataset, DataLoader
 from torch.nn.functional import interpolate
 import numpy as np
 from einops import rearrange
+
+from ffcv.loader import Loader, OrderOption
+from ffcv.fields.decoders import NDArrayDecoder
+from ffcv.transforms import ToTensor
+
 from wavebench import wavebench_dataset_path
 
 # import matplotlib.pyplot as plt
@@ -26,7 +31,8 @@ class IsDataset(Dataset):
   def __init__(self,
                dataset_name='thick_lines',
                medium_type='gaussian_lens',
-               resize_sidelen=None):
+               resize_sidelen=None,
+               numpy=False):
     super(IsDataset, self).__init__()
 
     if dataset_name == 'thick_lines':
@@ -74,6 +80,9 @@ class IsDataset(Dataset):
         size=[initial.shape[-1], initial.shape[-2]],
         mode='nearest')
 
+    if numpy:
+      initial = np.array(initial).astype('float32')
+      measurements = np.array(measurements).astype('float32')
     self.measurements = measurements
     self.initial = initial
     self.len = measurements.shape[0]
@@ -96,7 +105,8 @@ def get_dataloaders_is_thick_lines(
       num_val_samples=500,
       num_test_samples=500,
       resize_sidelen=None,
-      num_workers=1):
+      num_workers=1,
+      use_ffcv=True):
   """Prepare loaders of the thick line reverse time continuation dataset.
 
   Args:
@@ -140,18 +150,32 @@ def get_dataloaders_is_thick_lines(
       'test': eval_batch_size
       }
 
-  dataloaders = {
-      x: DataLoader(
-          image_datasets[x], batch_size=batch_sizes[x],
-          shuffle=(x == 'train'), pin_memory=True,
-          num_workers=num_workers) for x in ['train', 'test']}
+  if use_ffcv:
+    dataloaders = {
+      x: Loader(
+        f'{is_dataset_dir}/thick_lines_{medium_type}.beton',
+        batch_size=batch_sizes[x],
+        num_workers=num_workers,
+        order=OrderOption.RANDOM if x == 'train' else OrderOption.SEQUENTIAL,
+        indices=image_datasets[x].indices,
+        pipelines={
+            'input': [NDArrayDecoder(), ToTensor()],
+            'target': [NDArrayDecoder(), ToTensor()]},
+        ) for x in ['train', 'val', 'test']}
+  else:
+    dataloaders = {
+        x: DataLoader(
+            image_datasets[x], batch_size=batch_sizes[x],
+            shuffle=(x == 'train'), pin_memory=True,
+            num_workers=num_workers) for x in ['train', 'test']}
   return dataloaders
 
 def get_dataloaders_is_mnist(
         medium_type='gaussian_lens',
         resize_sidelen=None,
         batch_size=1,
-        num_workers=1):
+        num_workers=1,
+        use_ffcv=True):
   """Prepare loaders of the mnist inverse source dataset.
 
   Args:
@@ -170,9 +194,21 @@ def get_dataloaders_is_mnist(
       resize_sidelen=resize_sidelen,
       )
 
-  loader = DataLoader(
-      dataset,
-      batch_size=batch_size,
-      shuffle=False, pin_memory=True,
-      num_workers=num_workers)
+  if use_ffcv:
+    loader = Loader(
+      f'{is_dataset_dir}/mnist_{medium_type}.beton',
+      batch_size=1,
+      num_workers=2, order=OrderOption.SEQUENTIAL,
+      pipelines={
+          'input': [NDArrayDecoder(), ToTensor()],
+          'target': [NDArrayDecoder(), ToTensor()],
+      },
+      )
+  else:
+    loader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False, pin_memory=True,
+        num_workers=num_workers)
+
   return loader
