@@ -1,83 +1,108 @@
 """Helmholtz dataset"""
 import os
 import torch
+import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.functional import interpolate
-import numpy as np
 from einops import rearrange
+from ffcv.loader import Loader, OrderOption
+from ffcv.fields.decoders import NDArrayDecoder
+from ffcv.transforms import ToTensor
 from wavebench import wavebench_dataset_path
-from wavebench.utils import absolute_file_paths
+from wavebench.utils import absolute_file_paths, flatten_list, get_files_with_extension
 
 
-helmholtz_dataset_dir = os.path.join(wavebench_dataset_path, "time_harmonic/")
-
-class HelmholtzDataset(Dataset):
-  """The time0harmonic Helmholtz dataset
-
-  Args:
-      dataset_name (str): can be `GRF_7Hz` or `GRF_15Hz`.
-          Default to `GRF_7Hz`.
-      sidelen: the side length of the input and target images.
-          Default to None (keeps the original size).
-          For an integer-valued sidelen, the images will be
-          interpolated to the desinated sidelen.
-  """
-  def __init__(self,
-               dataset_name='GRF_7Hz',
-               sidelen=None):
-    super(HelmholtzDataset, self).__init__()
-
-    input_data_paths = sorted(
-      absolute_file_paths(
-        os.path.join(helmholtz_dataset_dir, dataset_name, 'model')))
-    target_data_paths = sorted(
-      absolute_file_paths(
-        os.path.join(helmholtz_dataset_dir, dataset_name, 'data')))
-
-    input_data = np.concatenate(
-      [np.array(np.load(data, mmap_mode='r')) for data in input_data_paths])
-    target_data = np.concatenate(
-      [np.array(np.load(data, mmap_mode='r')) for data in target_data_paths])
+helmholtz_dataset_path = os.path.join(
+  wavebench_dataset_path, "time_harmonic/")
 
 
-    input_data = 1e-3 * torch.from_numpy(
-        input_data).type(torch.FloatTensor)
-    target_data = torch.from_numpy(
-        target_data).type(torch.FloatTensor)
+class HelmholtzDataset(torch.utils.data.Dataset):
+  """Helmholtz dataset."""
+  def __init__(self, kernel_type, frequency):
 
-    input_data = rearrange(input_data, 'n h w -> n 1 h w')
+    if kernel_type not in ['isotropic', 'anisotropic']:
+      raise AssertionError(
+        'kernel_type must be either isotropic or anisotropic')
 
-    target_data = rearrange(target_data, 'n h w -> n 1 h w')
+    wavespeed_paths = [absolute_file_paths(a) for a in absolute_file_paths(
+      f'{helmholtz_dataset_path}/{kernel_type}') \
+        if a.split('/')[-1].startswith('cp_')]
 
-    if sidelen is not None:
-      input_data = interpolate(
-        input_data,
-        size=[sidelen, sidelen],
-        mode='bicubic')
-      target_data = interpolate(
-        target_data,
-        size=[sidelen, sidelen],
-        mode='bicubic')
+    print(wavespeed_paths)
+    wavespeed_paths = flatten_list(wavespeed_paths)
 
-    self.input_data = input_data
-    self.target_data = target_data
-    self.len = input_data.shape[0]
+    self.wavespeed_paths = sorted(
+      wavespeed_paths, key=lambda k: k.split('/')[-1])
 
+    pressure_paths = []
+
+    for path in absolute_file_paths(f'{helmholtz_dataset_path}/{kernel_type}'):
+      if path.split('/')[-1].startswith('data-set_wavefield'):
+        pressure_paths.append(
+            get_files_with_extension(path, 'H@'))
+
+    if frequency == 1.0:
+      pressure_with_frequency = [a for a in flatten_list(pressure_paths)\
+        if '1.00000E+01Hz' in a.split('/')[-1]]
+    elif frequency == 1.5:
+      pressure_with_frequency = [a for a in flatten_list(pressure_paths)\
+        if '1.50000E+01Hz' in a.split('/')[-1]]
+    elif frequency == 2.0:
+      pressure_with_frequency = [a for a in flatten_list(pressure_paths)\
+        if '2.00000E+01Hz' in a.split('/')[-1]]
+    elif frequency == 4.0:
+      pressure_with_frequency = [a for a in flatten_list(pressure_paths)\
+        if '4.00000E+01Hz' in a.split('/')[-1]]
+    else:
+      raise NotImplementedError
+    self.pressure_with_frequency = sorted(
+      pressure_with_frequency, key=lambda k: k.split('/')[-3])
   def __len__(self):
-    return self.len
+    return len(self.wavespeed_paths)
 
-  def __getitem__(self, idx):
-    return self.input_data[idx], self.target_data[idx]
+  def __getitem__(self, idx, verbose_path=False):
+
+    wavespeed = np.fromfile(
+        self.wavespeed_paths[idx],
+        dtype=np.float32).reshape(1, 128, 128)
+
+    if 'real' in self.pressure_with_frequency[2 * idx]:
+      real_idx = 2 * idx
+      img_idx = 2 * idx + 1
+    else:
+      real_idx = 2 * idx + 1
+      img_idx = 2 * idx
+
+    pressure_real = np.fromfile(
+      self.pressure_with_frequency[real_idx],
+      dtype=np.float32).reshape(1, 128, 128)
+
+    pressure_img = np.fromfile(
+      self.pressure_with_frequency[img_idx],
+      dtype=np.float32).reshape(1, 128, 128)
+
+    pressure = np.concatenate([pressure_real, pressure_img], axis=0)
+
+    if verbose_path:
+      print(f'wavespeed path {self.wavespeed_paths[idx]}')
+      print(f'real pressure path {self.pressure_with_frequency[real_idx]}')
+      print(f'complex pressure path {self.pressure_with_frequency[img_idx]}')
+    return wavespeed, pressure
 
 
+
+# f'{wavebench_dataset_path}/time_harmonic/{kernel_type}_{frequency}.beton'
 def get_dataloaders_helmholtz(
-      dataset_name='GRF_7Hz',
+      kernel_type='isotropic',
+      frequency=1.0,
       train_batch_size=1,
-      test_batch_size=1,
-      train_fraction=0.625,
-      test_fraction=0.125,
+      eval_batch_size=1,
+      num_train_samples=49000,
+      num_val_samples=500,
+      num_test_samples=500,
       sidelen=None,
-      num_workers=1):
+      num_workers=1,
+      use_ffcv=False):
   """Prepare loaders of the thick line reverse time continuation dataset.
 
   Args:
@@ -94,36 +119,58 @@ def get_dataloaders_helmholtz(
           Default to None (keeps the original size).
           For an integer-valued sidelen, the images will be
           interpolated to the desinated sidelen.
-      num_workers (int, optional): number of workders. Defaults to 1.
-
-  Returns:
-      dataloaders: a dictionary of dataloaders for training,
-          evaluation, and testing
+      num_workers (int, optional): number of workers for data loading.
   """
-  dataset = HelmholtzDataset(
-      dataset_name=dataset_name,
-      sidelen=sidelen
-      )
 
-  val_fraction = 1 - train_fraction - test_fraction
-
-  subsets = torch.utils.data.random_split(
-      dataset, [train_fraction, val_fraction, test_fraction],
-      generator=torch.Generator().manual_seed(42))
-
-  image_datasets = {
-      'train': subsets[0],
-      'val': subsets[1],
-      'test': subsets[2]}
+  sum_samples = num_train_samples + num_val_samples + num_test_samples
+  assert sum_samples <= 50000
 
   batch_sizes = {
       'train': train_batch_size,
-      'val': test_batch_size,
-      'test': test_batch_size}
+      'val': eval_batch_size,
+      'test': eval_batch_size
+      }
 
-  dataloaders = {
+  if use_ffcv:
+    generator = torch.Generator().manual_seed(42)
+    indices = torch.randperm(sum_samples, generator=generator).tolist()
+
+    splitted_indices = {
+      'train': indices[:num_train_samples],
+      'val': indices[num_train_samples:num_train_samples+num_val_samples],
+      'test': indices[num_train_samples+num_val_samples:]
+    }
+
+    dataloaders = {
+      x: Loader(
+        f'{wavebench_dataset_path}/time_harmonic/{kernel_type}_{frequency}.beton',
+        batch_size=batch_sizes[x],
+        num_workers=num_workers,
+        order=OrderOption.RANDOM if x == 'train' else OrderOption.SEQUENTIAL,
+        indices=splitted_indices[x],
+        pipelines={
+            'input': [NDArrayDecoder(), ToTensor()],
+            'target': [NDArrayDecoder(), ToTensor()]},
+        ) for x in ['train', 'val', 'test']}
+  else:
+    dataset = HelmholtzDataset(
+        kernel_type=kernel_type,
+        frequency=frequency,
+        )
+
+    subsets = torch.utils.data.random_split(
+        dataset, [num_train_samples, num_val_samples, num_test_samples],
+        generator=torch.Generator().manual_seed(42))
+
+    image_datasets = {
+        'train': subsets[0],
+        'val': subsets[1],
+        'test': subsets[2]}
+
+    dataloaders = {
       x: DataLoader(
           image_datasets[x], batch_size=batch_sizes[x],
           shuffle=(x == 'train'), pin_memory=True,
           num_workers=num_workers) for x in ['train', 'val', 'test']}
   return dataloaders
+

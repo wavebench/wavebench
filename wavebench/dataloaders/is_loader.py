@@ -106,7 +106,7 @@ def get_dataloaders_is_thick_lines(
       num_test_samples=500,
       resize_sidelen=None,
       num_workers=1,
-      use_ffcv=True):
+      use_ffcv=False):
   """Prepare loaders of the thick line reverse time continuation dataset.
 
   Args:
@@ -175,7 +175,7 @@ def get_dataloaders_is_mnist(
         resize_sidelen=None,
         batch_size=1,
         num_workers=1,
-        use_ffcv=True):
+        use_ffcv=False):
   """Prepare loaders of the mnist inverse source dataset.
 
   Args:
