@@ -28,7 +28,6 @@ class HelmholtzDataset(torch.utils.data.Dataset):
       f'{helmholtz_dataset_path}/{kernel_type}') \
         if a.split('/')[-1].startswith('cp_')]
 
-    print(wavespeed_paths)
     wavespeed_paths = flatten_list(wavespeed_paths)
 
     self.wavespeed_paths = sorted(
@@ -103,10 +102,11 @@ def get_dataloaders_helmholtz(
       sidelen=None,
       num_workers=1,
       use_ffcv=False):
-  """Prepare loaders of the thick line reverse time continuation dataset.
+  """Prepare loaders of the Helmholtz dataset.
 
   Args:
-      medium_type: can be `gaussian_lens` or `gaussian_random_field`.
+      kernel_type: can be `isotropic` or `anisotropic`.
+      frequency: can be 1.0, 1.5, 2.0, 4.0.
       train_batch_size (int, optional): batch size of training.
           Defaults to 1.
       test_batch_size (int, optional): batch size of testing.

@@ -3,7 +3,7 @@ import argparse
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import TensorBoardLogger #WandbLogger
 
 from wavebench import wavebench_path
 from wavebench.nn.pl_model_wrapper import LitModel
@@ -15,8 +15,14 @@ parser = argparse.ArgumentParser()
 # Dataset settings
 parser.add_argument('--batch_size', type=int, default=32,
     help='The mini-batch size for training.')
-parser.add_argument('--dataset_name', type=str, default='GRF_7Hz',
-    help='Can be `GRF_7Hz` or `GRF_15Hz`.')
+parser.add_argument('--kernel_type', type=str, default='isotropic',
+    help='Can be `isotropic` or `anisotropic`.')
+parser.add_argument('--frequency', type=float, default=1.0,
+    help='Can be 1.0, 1.5, 2.0, 4.0 ')
+
+# Model settings
+parser.add_argument('--num_layers', type=int, default=4,
+    help='Num FNO layers.')
 
 
 # Training settings
@@ -46,21 +52,24 @@ def main():
 
   dataset_setting_dict = {
       'train_batch_size': args.batch_size,
-      'test_batch_size': args.batch_size,
-      'num_workers': args.num_workers
+      'eval_batch_size': args.batch_size,
+      'num_workers': args.num_workers,
+      'kernel_type': args.kernel_type,
+      'frequency': args.frequency,
       }
 
   loaders = get_dataloaders_helmholtz(
-      dataset_name=args.dataset_name,
       **dataset_setting_dict)
 
   model_config = {
-      'model_name': 'fno',
-      'n_modes_width': 16,
-      'n_modes_height': 16,
-      'hidden_channels': 64,
-      'in_channels': 1,
-      'out_channels': 1}
+    'model_name': 'fno',
+    'modes1': 16,
+    'modes2': 16,
+    'hidden_width': 64,
+    'num_in_channels': 1,
+    'num_out_channels': 2,
+    'num_hidden_layers': args.num_layers
+    }
 
   model_name = model_config['model_name']
 
@@ -78,11 +87,11 @@ def main():
       **training_config)
 
   checkpoint_callback = ModelCheckpoint(
-      monitor='val_loss',
+      monitor='val_rel_lp_loss',
       save_top_k=1,
       mode='min')
 
-  task_name = f'is_{args.dataset_name}'
+  task_name = f'helmholtz_{args.kernel_type}_{args.frequency}'
 
   model_save_dir = str(wavebench_path + f'/saved_models/{task_name}')
 
@@ -90,6 +99,14 @@ def main():
       model_save_dir,
       name=model_name,
       )
+
+#   logger = WandbLogger(
+#     name=f'{model_name}_depth_{args.num_layers}',
+#     save_dir=wavebench_path + '/saved_models/',
+#     project=task_name,
+#     log_model="all"
+#     )
+
   logger.log_hyperparams(model.hparams)
 
   lr_monitor = LearningRateMonitor(logging_interval='step')

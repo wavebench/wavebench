@@ -15,8 +15,15 @@ parser = argparse.ArgumentParser()
 # Dataset settings
 parser.add_argument('--batch_size', type=int, default=32,
     help='The mini-batch size for training.')
-parser.add_argument('--dataset_name', type=str, default='GRF_7Hz',
-    help='Can be `GRF_7Hz` or `GRF_15Hz`.')
+parser.add_argument('--kernel_type', type=str, default='isotropic',
+    help='Can be `isotropic` or `anisotropic`.')
+parser.add_argument('--frequency', type=float, default=1.0,
+    help='Can be 1.0, 1.5, 2.0, 4.0 ')
+
+
+# Model settings
+parser.add_argument('--channel_reduction_factor', type=int, default=2,
+    help='Channel redu factor.')
 
 # Training settings
 parser.add_argument('--num_epochs', type=int, default=50,
@@ -45,18 +52,21 @@ def main():
 
   dataset_setting_dict = {
       'train_batch_size': args.batch_size,
-      'test_batch_size': args.batch_size,
-      'num_workers': args.num_workers
+      'eval_batch_size': args.batch_size,
+      'num_workers': args.num_workers,
+      'kernel_type': args.kernel_type,
+      'frequency': args.frequency,
       }
 
   loaders = get_dataloaders_helmholtz(
-      dataset_name=args.dataset_name,
       **dataset_setting_dict)
+
 
   model_config = {
     'model_name': 'unet',
     'n_input_channels': 1,
-    'n_output_channels': 1
+    'n_output_channels': 2,
+    'channel_reduction_factor': args.channel_reduction_factor
     }
 
   model_name = model_config['model_name']
@@ -75,11 +85,11 @@ def main():
       **training_config)
 
   checkpoint_callback = ModelCheckpoint(
-      monitor='val_loss',
+      monitor='val_rel_lp_loss',
       save_top_k=1,
       mode='min')
 
-  task_name = f'helmholtz_{args.dataset_name}'
+  task_name = f'helmholtz_{args.kernel_type}_{args.frequency}'
 
   model_save_dir = str(wavebench_path + f'/saved_models/{task_name}')
 
@@ -87,6 +97,7 @@ def main():
       model_save_dir,
       name=model_name,
       )
+
   logger.log_hyperparams(model.hparams)
 
   lr_monitor = LearningRateMonitor(logging_interval='step')
