@@ -145,7 +145,6 @@ def get_dataloaders_rtc_thick_lines(
       'test': eval_batch_size
       }
 
-
   if use_ffcv:
     dataloaders = {
       x: Loader(

@@ -2,9 +2,7 @@
 import os
 import torch
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
-from torch.nn.functional import interpolate
-from einops import rearrange
+from torch.utils.data import DataLoader
 from ffcv.loader import Loader, OrderOption
 from ffcv.fields.decoders import NDArrayDecoder
 from ffcv.transforms import ToTensor
@@ -61,7 +59,7 @@ class HelmholtzDataset(torch.utils.data.Dataset):
 
   def __getitem__(self, idx, verbose_path=False):
 
-    wavespeed = np.fromfile(
+    wavespeed = 1e-3 * np.fromfile(
         self.wavespeed_paths[idx],
         dtype=np.float32).reshape(1, 128, 128)
 
