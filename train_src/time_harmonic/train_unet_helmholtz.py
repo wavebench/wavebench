@@ -3,7 +3,7 @@ import argparse
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import WandbLogger #TensorBoardLogger
 
 from wavebench import wavebench_path
 from wavebench.nn.pl_model_wrapper import LitModel
@@ -26,7 +26,7 @@ parser.add_argument('--channel_reduction_factor', type=int, default=2,
     help='Channel redu factor.')
 
 # Training settings
-parser.add_argument('--num_epochs', type=int, default=50,
+parser.add_argument('--num_epochs', type=int, default=20,
                     help='number of training epochs.')
 parser.add_argument('--loss_fun_type', type=str, default='relative_l2',
                     help='the loss function.')
@@ -93,10 +93,12 @@ def main():
 
   model_save_dir = str(wavebench_path + f'/saved_models/{task_name}')
 
-  logger = TensorBoardLogger(
-      model_save_dir,
-      name=model_name,
-      )
+  logger = WandbLogger(
+    name=f'{model_name}_redu_factor_{args.channel_reduction_factor}',
+    save_dir=wavebench_path + '/saved_models/',
+    project=task_name,
+    log_model="all"
+    )
 
   logger.log_hyperparams(model.hparams)
 

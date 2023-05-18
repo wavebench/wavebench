@@ -3,7 +3,7 @@ import argparse
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger #WandbLogger
+from pytorch_lightning.loggers import WandbLogger #TensorBoardLogger
 
 from wavebench import wavebench_path
 from wavebench.nn.pl_model_wrapper import LitModel
@@ -20,13 +20,13 @@ parser.add_argument('--kernel_type', type=str, default='isotropic',
 parser.add_argument('--frequency', type=float, default=1.0,
     help='Can be 1.0, 1.5, 2.0, 4.0 ')
 
+
 # Model settings
 parser.add_argument('--num_layers', type=int, default=4,
     help='Num FNO layers.')
 
-
 # Training settings
-parser.add_argument('--num_epochs', type=int, default=50,
+parser.add_argument('--num_epochs', type=int, default=20,
                     help='number of training epochs.')
 parser.add_argument('--loss_fun_type', type=str, default='relative_l2',
                     help='the loss function.')
@@ -95,17 +95,12 @@ def main():
 
   model_save_dir = str(wavebench_path + f'/saved_models/{task_name}')
 
-  logger = TensorBoardLogger(
-      model_save_dir,
-      name=model_name,
-      )
-
-#   logger = WandbLogger(
-#     name=f'{model_name}_depth_{args.num_layers}',
-#     save_dir=wavebench_path + '/saved_models/',
-#     project=task_name,
-#     log_model="all"
-#     )
+  logger = WandbLogger(
+    name=f'{model_name}_depth_{args.num_layers}',
+    save_dir=wavebench_path + '/saved_models/',
+    project=task_name,
+    log_model="all"
+    )
 
   logger.log_hyperparams(model.hparams)
 
