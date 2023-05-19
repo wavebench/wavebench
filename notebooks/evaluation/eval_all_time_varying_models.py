@@ -15,21 +15,21 @@ from wavebench.plot_utils import plot_images, remove_frame
 
 
 all_models = [
-  # {
-  #   "tag": 'fno-depth-4',
-  #   "config.model_config/model_name": 'fno',
-  #   "config.model_config/num_hidden_layers": 4
-  # },
+  {
+    "tag": 'fno-depth-4',
+    "config.model_config/model_name": 'fno',
+    "config.model_config/num_hidden_layers": 4
+  },
   {
     "tag": 'fno-depth-8',
     "config.model_config/model_name": 'fno',
     "config.model_config/num_hidden_layers": 8
   },
-  # {
-  #   "tag": 'unet-ch-32',
-  #   "config.model_config/model_name": 'unet',
-  #   "config.model_config/channel_reduction_factor": 2
-  # },
+  {
+    "tag": 'unet-ch-32',
+    "config.model_config/model_name": 'unet',
+    "config.model_config/channel_reduction_factor": 2
+  },
   {
     "tag": 'unet-ch-64',
     "config.model_config/model_name": 'unet',
@@ -100,6 +100,17 @@ for eval_config.problem in ['is', 'rtc']:
 
         checkpoint_reference = f"tliu/{project}/model-{run_id}:best"#best"
         print(f'checkpoint: {checkpoint_reference}')
+
+        # delete all the checkpoints that do not have aliases
+        artifact_versions = api.artifact_versions(
+          name=f'{project}/model-{run_id}', type_name='model')
+
+        for v in artifact_versions:
+          if len(v.aliases) == 0:
+            v.delete()
+            print(f'deleted {v.name}')
+          else:
+            print(f'kept {v.name}, {v.aliases}')
 
         artifact_dir = WandbLogger.download_artifact(
           artifact=checkpoint_reference,
