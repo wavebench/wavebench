@@ -51,4 +51,4 @@ def generate_random_lines_dataset(num_data):
   return None
 
 if __name__ == '__main__':
-  generate_random_lines_dataset(5000)
+  generate_random_lines_dataset(10000)

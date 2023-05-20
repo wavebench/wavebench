@@ -16,12 +16,12 @@ from wavebench.plot_utils import plot_images, remove_frame
 # %%
 
 config = ml_collections
-# config.initial_pressure_type = 'thick_lines'
 config.initial_pressure_type = 'thick_lines'
 
 config.save_data = False
-# config.medium_type = 'gaussian_random_field'
-config.medium_type = 'gaussian_lens'
+# config.medium_type = 'grf_isotropic'
+config.medium_type = 'grf_anisotropic'
+# config.medium_type = 'gaussian_lens'
 config.device_id = 0
 
 
@@ -54,10 +54,24 @@ if config.medium_type == 'gaussian_lens':
       ksize=(0, 0),
       sigmaX=50,
       borderType=cv2.BORDER_REPLICATE)
-elif config.medium_type == 'gaussian_random_field':
+elif config.medium_type == 'grf_isotropic':
   medium_sound_speed = np.fromfile(
     os.path.join(
-      wavebench_dataset_path, "time_varying/wavespeed/cp_128x128_00001.H@"),
+      wavebench_dataset_path,
+      "time_varying/wavespeed/isotropic_cp_128x128_00001.H@"),
+    dtype=np.float32).reshape(128, 128)
+
+  if config.domain_sidelen != 128:
+    medium_sound_speed = jax.image.resize(
+        medium_sound_speed,
+        (config.domain_sidelen, config.domain_sidelen),
+        'bicubic')
+
+elif config.medium_type == 'grf_anisotropic':
+  medium_sound_speed = np.fromfile(
+    os.path.join(
+      wavebench_dataset_path,
+      "time_varying/wavespeed/anisotropic_cp_128x128_00001.H@"),
     dtype=np.float32).reshape(128, 128)
 
   if config.domain_sidelen != 128:

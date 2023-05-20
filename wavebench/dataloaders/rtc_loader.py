@@ -22,7 +22,7 @@ class RtcDataset(Dataset):
   Args:
       dataset_name (str): can be `thick_lines` or `mnist`.
           Default to `thick_lines`.
-      medium_type (str): can be `gaussian_lens` or `gaussian_random_field`.
+      medium_type (str): can be `gaussian_lens`, `grf_isotropic`, or 'grf_anisotropic`.
       resize_sidelen: the side length of the input and target images.
           Default to None. If sidelen is an integer, the images will be
           interpolated to the desinated sidelen.
@@ -35,18 +35,18 @@ class RtcDataset(Dataset):
     super(RtcDataset, self).__init__()
 
     if dataset_name == 'thick_lines':
-      if medium_type in ['gaussian_lens', 'gaussian_random_field']:
+      if medium_type in ['gaussian_lens', 'grf_isotropic', 'grf_anisotropic']:
         initial_pressure_dataset = np.memmap(
           f'{rtc_dataset}/{dataset_name}_{medium_type}_initial_pressure_dataset.npy', mode='r',
-          shape=(5000, 128, 128), dtype=np.float32)
+          shape=(10000, 128, 128), dtype=np.float32)
         final_pressure_dataset = np.memmap(
             f'{rtc_dataset}/{dataset_name}_{medium_type}_final_pressure_dataset.npy', mode='r',
-            shape=(5000, 128, 128), dtype=np.float32)
+            shape=(10000, 128, 128), dtype=np.float32)
       else:
         raise ValueError(f'medium_type {medium_type} not recognized.')
     elif dataset_name == 'mnist':
       # raise ValueError('mnist is not supported yet')
-      if medium_type in ['gaussian_lens', 'gaussian_random_field']:
+      if medium_type in ['gaussian_lens', 'grf_isotropic', 'grf_anisotropic']:
         initial_pressure_dataset = np.memmap(
           f'{rtc_dataset}/{dataset_name}_{medium_type}_initial_pressure_dataset.npy', mode='r',
           shape=(50, 128, 128), dtype=np.float32)
@@ -96,12 +96,12 @@ def get_dataloaders_rtc_thick_lines(
       medium_type='gaussian_lens',
       train_batch_size=1,
       eval_batch_size=1,
-      num_train_samples=4000,
+      num_train_samples=9000,
       num_val_samples=500,
       num_test_samples=500,
       resize_sidelen=None,
       num_workers=1,
-      use_ffcv=False):
+      use_ffcv=True):
   """Prepare loaders of the thick line reverse time continuation dataset.
 
   Args:

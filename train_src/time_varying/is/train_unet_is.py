@@ -30,7 +30,7 @@ parser.add_argument('--loss_fun_type', type=str, default='relative_l2',
                     help='the loss function.')
 parser.add_argument('--learning_rate', type=float, default=1e-3,
                     help='learning rate of gradient descent.')
-parser.add_argument('--weight_decay', type=float, default=1e-5)
+parser.add_argument('--weight_decay', type=float, default=1e-2)
 parser.add_argument('--eta_min', type=float, default=1e-5,
                     help='the eta_min for CosineAnnealingLR decay.')
 

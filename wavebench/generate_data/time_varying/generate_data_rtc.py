@@ -9,7 +9,12 @@ python generate_data_rtc.py \
 python generate_data_rtc.py \
   --device_id 0 \
   --initial_pressure_type thick_lines \
-  --medium_type gaussian_random_field
+  --medium_type grf_isotropic
+
+python generate_data_rtc.py \
+  --device_id 0 \
+  --initial_pressure_type thick_lines \
+  --medium_type grf_anisotropic
 
 python generate_data_rtc.py \
   --device_id 0 \
@@ -19,7 +24,12 @@ python generate_data_rtc.py \
 python generate_data_rtc.py \
   --device_id 0 \
   --initial_pressure_type mnist \
-  --medium_type gaussian_random_field
+  --medium_type grf_isotropic
+
+python generate_data_rtc.py \
+  --device_id 0 \
+  --initial_pressure_type mnist \
+  --medium_type grf_anisotropic
 """
 
 import os
@@ -108,7 +118,7 @@ def generate_rtc(config):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--medium_type', type=str, default='gaussian_lens',
-                    help='Can be `gaussian_lens` or `gaussian_random_field`.')
+    help='Can be `gaussian_lens`, `grf_isotropic` or `grf_anisotropic`.')
 parser.add_argument('--initial_pressure_type', type=str, default='thick_lines',
                     help='Can be `thick_lines` or `mnist`.')
 parser.add_argument('--device_id', type=int, default=0)
@@ -147,10 +157,24 @@ def main():
         ksize=(0, 0),
         sigmaX=50,
         borderType=cv2.BORDER_REPLICATE)
-  elif config.medium_type == 'gaussian_random_field':
+  elif config.medium_type == 'grf_isotropic':
     medium_sound_speed = np.fromfile(
       os.path.join(
-        wavebench_dataset_path, "time_varying/wavespeed/cp_128x128_00001.H@"),
+        wavebench_dataset_path,
+        "time_varying/wavespeed/isotropic_cp_128x128_00001.H@"),
+      dtype=np.float32).reshape(128, 128)
+
+    if config.domain_sidelen != 128:
+      medium_sound_speed = jax.image.resize(
+          medium_sound_speed,
+          (config.domain_sidelen, config.domain_sidelen),
+          'bicubic')
+
+  elif config.medium_type == 'grf_anisotropic':
+    medium_sound_speed = np.fromfile(
+      os.path.join(
+        wavebench_dataset_path,
+        "time_varying/wavespeed/anisotropic_cp_128x128_00001.H@"),
       dtype=np.float32).reshape(128, 128)
 
     if config.domain_sidelen != 128:

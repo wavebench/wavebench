@@ -23,7 +23,7 @@ class IsDataset(Dataset):
   Args:
       dataset_name (str): can be `thick_lines` or `mnist`.
           Default to `thick_lines`.
-      medium_type (str): can be `gaussian_lens` or `gaussian_random_field`.
+      medium_type (str): can be `gaussian_lens`, `grf_isotropic`, or 'grf_anisotropic`.
       resize_sidelen: the side length of the input and target images.
           Default to None. If sidelen is an integer, the images will be
           interpolated to the desinated sidelen.
@@ -36,17 +36,17 @@ class IsDataset(Dataset):
     super(IsDataset, self).__init__()
 
     if dataset_name == 'thick_lines':
-      if medium_type in ['gaussian_lens', 'gaussian_random_field']:
+      if medium_type in ['gaussian_lens', 'grf_isotropic', 'grf_anisotropic']:
         initial_pressure_dataset = np.memmap(
             f'{is_dataset_dir}/{dataset_name}_{medium_type}_initial_pressure_dataset.npy',
-            mode='r', shape=(5000, 128, 128), dtype=np.float32)
+            mode='r', shape=(10000, 128, 128), dtype=np.float32)
         boundary_measurement_dataset = np.memmap(
             f'{is_dataset_dir}/{dataset_name}_{medium_type}_boundary_measurement_dataset.npy',
-            mode='r', shape=(5000, 334, 128), dtype=np.float32)
+            mode='r', shape=(10000, 334, 128), dtype=np.float32)
       else:
         raise ValueError(f'medium_type {medium_type} not recognized.')
     elif dataset_name == 'mnist':
-      if medium_type in ['gaussian_lens', 'gaussian_random_field']:
+      if medium_type in ['gaussian_lens', 'grf_isotropic', 'grf_anisotropic']:
         initial_pressure_dataset = np.memmap(
           f'{is_dataset_dir}/{dataset_name}_{medium_type}_initial_pressure_dataset.npy', mode='r',
           shape=(50, 128, 128), dtype=np.float32)
@@ -101,12 +101,12 @@ def get_dataloaders_is_thick_lines(
       medium_type='gaussian_lens',
       train_batch_size=1,
       eval_batch_size=1,
-      num_train_samples=4000,
+      num_train_samples=9000,
       num_val_samples=500,
       num_test_samples=500,
       resize_sidelen=None,
       num_workers=1,
-      use_ffcv=False):
+      use_ffcv=True):
   """Prepare loaders of the thick line reverse time continuation dataset.
 
   Args:
@@ -167,7 +167,7 @@ def get_dataloaders_is_thick_lines(
         x: DataLoader(
             image_datasets[x], batch_size=batch_sizes[x],
             shuffle=(x == 'train'), pin_memory=True,
-            num_workers=num_workers) for x in ['train', 'test']}
+            num_workers=num_workers) for x in ['train', 'val', 'test']}
   return dataloaders
 
 def get_dataloaders_is_mnist(

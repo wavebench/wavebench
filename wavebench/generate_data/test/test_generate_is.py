@@ -6,6 +6,7 @@ import cv2
 import matlab.engine # the matlab engine for python
 import jax
 
+import matplotlib.pyplot as plt
 from wavebench import wavebench_path
 from wavebench.generate_data.time_varying.generate_data_is import generate_is
 from wavebench import wavebench_dataset_path
@@ -19,8 +20,9 @@ config = ml_collections
 config.save_data = False
 config.initial_pressure_type = 'thick_lines'
 # config.initial_pressure_type = 'mnist'
-config.medium_type = 'gaussian_lens'
-# config.medium_type = 'gaussian_random_field'
+# config.medium_type = 'gaussian_lens'
+# config.medium_type = 'grf_isotropic'
+config.medium_type = 'grf_anisotropic'
 config.device_id = 0
 
 config.domain_sidelen = 128
@@ -48,10 +50,24 @@ if config.medium_type == 'gaussian_lens':
       ksize=(0, 0),
       sigmaX=50,
       borderType=cv2.BORDER_REPLICATE)
-elif config.medium_type == 'gaussian_random_field':
+elif config.medium_type == 'grf_isotropic':
   medium_sound_speed = np.fromfile(
     os.path.join(
-      wavebench_dataset_path, "time_varying/wavespeed/cp_128x128_00001.H@"),
+      wavebench_dataset_path,
+      "time_varying/wavespeed/isotropic_cp_128x128_00001.H@"),
+    dtype=np.float32).reshape(128, 128)
+
+  if config.domain_sidelen != 128:
+    medium_sound_speed = jax.image.resize(
+        medium_sound_speed,
+        (config.domain_sidelen, config.domain_sidelen),
+        'bicubic')
+
+elif config.medium_type == 'grf_anisotropic':
+  medium_sound_speed = np.fromfile(
+    os.path.join(
+      wavebench_dataset_path,
+      "time_varying/wavespeed/anisotropic_cp_128x128_00001.H@"),
     dtype=np.float32).reshape(128, 128)
 
   if config.domain_sidelen != 128:
@@ -124,18 +140,6 @@ axes[2].set_title(f'diff mse={mse:.2}')
 
 # %%
 
-import matplotlib.pyplot as plt
-from torch.nn.functional import interpolate
-import torch
-
-# plt.figure()
-# plt.imshow(resized_initial_pressure)
-
-plt.figure()
-measurements = interpolate(
-    torch.from_numpy(jwave_measurements).unsqueeze(0).unsqueeze(0),
-    size=[128, 128],
-    mode='nearest').squeeze()
-plt.imshow(measurements)
+plt.imshow(config.medium_sound_speed, cmap='coolwarm')
 
 # %%
