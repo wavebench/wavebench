@@ -1,5 +1,6 @@
 """ Evaluate all models on the time-varying datasets"""
 import pprint
+import os
 from pathlib import Path
 import wandb
 import matplotlib.pyplot as plt
@@ -49,121 +50,174 @@ device = 'cpu'
 
 eval_config = ml_collections.ConfigDict()
 
+save_path = f'{wavebench_figure_path}/time_varying'
+if not os.path.exists(save_path):
+  os.makedirs(save_path)
+
 
 # problem setting: can be 'is' or 'rtc'
 for eval_config.problem in ['is', 'rtc']:
 # for eval_config.problem in ['is']:
 
-  # dataset setting: can be 'thick_lines' or 'mnist'
-  for eval_config.dataset_name in ['thick_lines', 'mnist']:
-  # for eval_config.dataset_name in ['mnist']:
+  # medium_type setting: can be 'gaussian_lens' or 'grf_isotropic' or 'grf_anisotropic'
+  for eval_config.medium_type in ['gaussian_lens', 'grf_isotropic', 'grf_anisotropic']:
 
-    # medium_type setting: can be 'gaussian_lens' or 'gaussian_random_field'
-    for eval_config.medium_type in ['gaussian_lens', 'gaussian_random_field']:
+    if eval_config.problem == 'rtc':
+      in_dist_test_loader = get_dataloaders_rtc_thick_lines(
+        medium_type=eval_config.medium_type,
+        use_ffcv=False,
+      )['test']
+      ood_test_loader = get_dataloaders_rtc_mnist(
+        medium_type=eval_config.medium_type,
+        use_ffcv=False,
+      )
 
-      if eval_config.problem == 'rtc' and eval_config.dataset_name == 'thick_lines':
-        test_loader = get_dataloaders_rtc_thick_lines(
-          medium_type=eval_config.medium_type,
-        )['test']
-      elif eval_config.problem == 'rtc' and eval_config.dataset_name == 'mnist':
-        test_loader = get_dataloaders_rtc_mnist(
-          medium_type=eval_config.medium_type,
+    elif eval_config.problem == 'is':
+      in_dist_test_loader = get_dataloaders_is_thick_lines(
+        medium_type=eval_config.medium_type,
+        use_ffcv=False,
+      )['test']
+      ood_test_loader = get_dataloaders_is_mnist(
+        medium_type=eval_config.medium_type,
+        use_ffcv=False,
         )
-      elif eval_config.problem == 'is' and eval_config.dataset_name == 'thick_lines':
-        test_loader = get_dataloaders_is_thick_lines(
-          medium_type=eval_config.medium_type,
-        )['test']
-      elif eval_config.problem == 'is' and eval_config.dataset_name == 'mnist':
-        test_loader = get_dataloaders_is_mnist(
-          medium_type=eval_config.medium_type)
+    else:
+      raise ValueError(
+        'Cannot find the dataset with the given settings:' +
+        f'problem: {eval_config.problem}, medium_type: {eval_config.medium_type}'
+                        )
+    model_dict = {}
+
+    for model_filters in all_models:
+      _model_filters = model_filters.copy()
+
+      model_tag = _model_filters.pop('tag')
+
+      project = f'{eval_config.problem}_{eval_config.medium_type}'
+      runs = api.runs(
+        path=f"tliu/{project}",
+        filters=_model_filters)
+
+      # make sure that there is a unique model that satisfies the filters
+      assert len(runs) == 1
+
+      run_id = runs[0].id
+
+      checkpoint_reference = f"tliu/{project}/model-{run_id}:best"
+      print(f'checkpoint: {checkpoint_reference}')
+
+      # delete all the checkpoints that do not have aliases such as
+      # 'best' or 'latest'.
+      artifact_versions = api.artifact_versions(
+        name=f'{project}/model-{run_id}', type_name='model')
+
+      for v in artifact_versions:
+        if len(v.aliases) == 0:
+          v.delete()
+          print(f'deleted {v.name}')
+        else:
+          print(f'kept {v.name}, {v.aliases}')
+
+      artifact_dir = WandbLogger.download_artifact(
+        artifact=checkpoint_reference,
+        save_dir=wavebench_checkpoint_path)
+
+      # load checkpoint
+      model = LitModel.load_from_checkpoint(
+        Path(artifact_dir) / "model.ckpt").to(device)
+
+      print('model hparams:')
+      pp.pprint(model.hparams.model_config)
+
+      model_dict[model_tag] = model
+      # runs = api.runs(path="tliu/rtc_gaussian_lens")
+
+    idx = 1
+    in_dist_sample_input, in_dist_sample_target = in_dist_test_loader.dataset.__getitem__(idx)
+    ood_sample_input, ood_sample_target = ood_test_loader.dataset.__getitem__(idx)
+
+    pannel_dict = {
+      'in-distri input': in_dist_sample_input.squeeze(),
+      'in-distri target': in_dist_sample_target.squeeze(),
+      'out-of-distri input': ood_sample_input.squeeze(),
+      'out-of-distri target': ood_sample_target.squeeze(),
+    }
+
+    for setting in ['in_dist', 'ood']:
+      if setting == 'in_dist':
+        sample_input = in_dist_sample_input
       else:
-        raise ValueError(
-          'Cannot find the dataset with the given settings:' +
-          f'problem: {eval_config.problem}, dataset_name: {eval_config.dataset_name}, medium_type: {eval_config.medium_type}'
-                         )
-      model_dict = {}
-
-      for model_filters in all_models:
-        _model_filters = model_filters.copy()
-
-        model_tag = _model_filters.pop('tag')
-
-        project = f'{eval_config.problem}_{eval_config.medium_type}'
-        runs = api.runs(
-          path=f"tliu/{project}",
-          filters=_model_filters)
-
-        # make sure that there is a unique model that satisfies the filters
-        assert len(runs) == 1
-
-        run_id = runs[0].id
-
-        checkpoint_reference = f"tliu/{project}/model-{run_id}:best"#best"
-        print(f'checkpoint: {checkpoint_reference}')
-
-        # delete all the checkpoints that do not have aliases
-        artifact_versions = api.artifact_versions(
-          name=f'{project}/model-{run_id}', type_name='model')
-
-        for v in artifact_versions:
-          if len(v.aliases) == 0:
-            v.delete()
-            print(f'deleted {v.name}')
-          else:
-            print(f'kept {v.name}, {v.aliases}')
-
-        artifact_dir = WandbLogger.download_artifact(
-          artifact=checkpoint_reference,
-          save_dir=wavebench_checkpoint_path)
-
-        # load checkpoint
-        model = LitModel.load_from_checkpoint(
-          Path(artifact_dir) / "model.ckpt").to(device)
-
-        print('model hparams:')
-        pp.pprint(model.hparams.model_config)
-
-        model_dict[model_tag] = model
-        # runs = api.runs(path="tliu/rtc_gaussian_lens")
-
-      idx = 1
-      sample_input, sample_target = test_loader.dataset.__getitem__(idx)
-
-      fig, axes = plt.subplots(1, 2, figsize=(8, 4))
-
-      axes[0].imshow(sample_input.squeeze().numpy(), cmap='coolwarm')
-      axes[0].set_title('Input')
-      axes[1].imshow(sample_target.squeeze().numpy(), cmap='coolwarm')
-      axes[1].set_title('Target')
-
-
-      pred_dict = {
-        'input': sample_input.squeeze(),
-        'gt': sample_target.squeeze()}
-
+        sample_input = ood_sample_input
       for tag, model in model_dict.items():
-        pred = model(
-          sample_input.unsqueeze(0).to(device)).detach().cpu().squeeze()
-        pred_dict[tag] = pred
+        pred = model(sample_input.unsqueeze(0).to(device)).detach().cpu().squeeze()
+        pannel_dict[f'{setting}_{tag}'] = pred
 
-      fig, axes = plot_images(
-        list(pred_dict.values()),
-        cbar='one',
-        fig_size=(9, 9),
-        shrink=0.15,
-        pad=0.02,
-        cmap='coolwarm')
+    fig, axes = plot_images(
+      list(pannel_dict.values()),
+      nrows=3,
+      cbar='one',
+      fig_size=(10, 6),
+      shrink=0.45,
+      pad=0.02,
+      cmap='coolwarm')
 
-      # axes[0,0]
-      for i, ax in enumerate(axes.flatten()):
-        ax.set_title( list(pred_dict.keys()) [i])
-        remove_frame(ax) #for ax in axes.flatten()]
+    # axes[0,0]
+    for i, ax in enumerate(axes.flatten()):
+      ax.set_title( list(pannel_dict.keys()) [i])
+      remove_frame(ax)
 
-      plt.suptitle(
-        f'Problem: {eval_config.problem}, Init pressure: {eval_config.dataset_name}, Wavespeed: {eval_config.medium_type}',
-        y=0.62,)
+    plt.suptitle(
+      f'Problem: {eval_config.problem}, Wavespeed: {eval_config.medium_type}',
+      y=1.0,)
 
-      plt.savefig(
-        f"{wavebench_figure_path}/model_out_{eval_config.problem}_{eval_config.dataset_name}_{eval_config.medium_type}.pdf",
-        format="pdf", bbox_inches="tight")
+    plt.savefig(
+      f"{save_path}/{eval_config.problem}_{eval_config.medium_type}.pdf",
+      format="pdf", bbox_inches="tight")
+
+
+    # idx = 1
+    # sample_input, sample_target = test_loader.dataset.__getitem__(idx)
+
+    # fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+
+    # axes[0].imshow(sample_input.squeeze().numpy(), cmap='coolwarm')
+    # axes[0].set_title('Input')
+    # axes[1].imshow(sample_target.squeeze().numpy(), cmap='coolwarm')
+    # axes[1].set_title('Target')
+
+
+    # pred_dict = {
+    #   'input': sample_input.squeeze(),
+    #   'gt': sample_target.squeeze()}
+
+    # for i in range(len(model_dict.items()) - 2):
+    #   # placeholder for the plots; these plots will be removed later
+    #   pred_dict[f'placeholder_{i}'] = sample_target.squeeze()
+
+
+    # for tag, model in model_dict.items():
+    #   pred = model(
+    #     sample_input.unsqueeze(0).to(device)).detach().cpu().squeeze()
+    #   pred_dict[tag] = pred
+
+    # fig, axes = plot_images(
+    #   list(pred_dict.values()),
+    #   nrows=2,
+    #   cbar='one',
+    #   fig_size=(9, 4),
+    #   shrink=0.5,
+    #   pad=0.02,
+    #   cmap='coolwarm')
+
+    # # axes[0,0]
+    # for i, ax in enumerate(axes.flatten()):
+    #   if list(pred_dict.keys())[i].startswith('placeholder'):
+    #     ax.remove()
+    #   else:
+    #     ax.set_title( list(pred_dict.keys()) [i])
+    #     remove_frame(ax)
+
+    # plt.suptitle(
+    #   f'Problem: {eval_config.problem}, Init pressure: {eval_config.dataset_name}, Wavespeed: {eval_config.medium_type}',
+    #   y=1.0,)
 

@@ -185,7 +185,7 @@ def plot_images(x_list, nrows=1, ncols=-1, fig=None, vrange='equal',
 
   if cbar == 'one':
     # fig.colorbar(im[0], ax=ax, fraction=0.046, pad=0.04, shrink=0.5)
-    fig.colorbar(im[0], ax=ax, pad=cbar_pad, shrink=cbar_shrink)
+    fig.colorbar(im.flatten()[0], ax=ax, pad=cbar_pad, shrink=cbar_shrink)
 
   return im, ax
 

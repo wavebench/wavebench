@@ -1,4 +1,4 @@
-""" Evaluate all models on the time-varying datasets"""
+""" Evaluate all models on the time-harmonic datasets"""
 import pprint
 from pathlib import Path
 import wandb
@@ -22,21 +22,21 @@ all_models = [
     "config.model_config/model_name": 'fno',
     "config.model_config/num_hidden_layers": 4
   },
-  # {
-  #   "tag": 'fno-depth-8',
-  #   "config.model_config/model_name": 'fno',
-  #   "config.model_config/num_hidden_layers": 8
-  # },
+  {
+    "tag": 'fno-depth-8',
+    "config.model_config/model_name": 'fno',
+    "config.model_config/num_hidden_layers": 8
+  },
   {
     "tag": 'unet-ch-32',
     "config.model_config/model_name": 'unet',
     "config.model_config/channel_reduction_factor": 2
   },
-  # {
-  #   "tag": 'unet-ch-64',
-  #   "config.model_config/model_name": 'unet',
-  #   "config.model_config/channel_reduction_factor": 1
-  # },
+  {
+    "tag": 'unet-ch-64',
+    "config.model_config/model_name": 'unet',
+    "config.model_config/channel_reduction_factor": 1
+  },
 
               ]
 
@@ -46,17 +46,18 @@ api = wandb.Api()
 
 
 pp = pprint.PrettyPrinter(depth=6)
-# device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 device = 'cpu'
 
 eval_config = ml_collections.ConfigDict()
 
 
 # problem setting: can be 'isotropic' or 'anisotropic'
-for eval_config.kernel_type in ['isotropic', 'anisotropic']:
+# for eval_config.kernel_type in ['isotropic', 'anisotropic']:
+for eval_config.kernel_type in ['isotropic']:
 
   # frequency: can be in [1.0, 1.5, 2.0, 4.0]
-  for eval_config.frequency in [1.0, 1.5, 2.0, 4.0]:
+  # for eval_config.frequency in [1.0, 1.5, 2.0, 4.0]:
+  for eval_config.frequency in [1.0]:
 
     test_loader = get_dataloaders_helmholtz(
       eval_config.kernel_type,
@@ -111,30 +112,48 @@ for eval_config.kernel_type in ['isotropic', 'anisotropic']:
         'input': sample_input.squeeze(),
         'gt': sample_target.squeeze()[0]}
 
-      pred_dict_img = {
-        'input': sample_input.squeeze(),
-        'gt': sample_target.squeeze()[1]}
+      # pred_dict_img = {
+      #   'input': sample_input.squeeze(),
+      #   'gt': sample_target.squeeze()[1]}
+
+      print(len(list(pred_dict_real.keys())))
+
+      for i in range(len(model_dict.items()) - 2):
+        # placeholder for the plots; these plots will be removed later
+        pred_dict_real[f'placeholder_{i}'] = sample_target.squeeze()[0]
+        # pred_dict_img[f'placeholder_{i}'] = sample_target.squeeze()[1]
+
+        print(len(list(pred_dict_real.keys())))
 
       for tag, model in model_dict.items():
         pred = model(
           sample_input.to(device)).detach().cpu().squeeze()
-          # sample_input.unsqueeze(0).to(device)).detach().cpu().squeeze()
         pred_dict_real[tag] = pred.squeeze()[0]
-        pred_dict_img[tag] = pred.squeeze()[1]
+        # pred_dict_img[tag] = pred.squeeze()[1]
+
+        pred_dict_real[f'{tag}_diff'] = (
+          pred.squeeze()[0] - sample_target.squeeze()[0]).abs()
+        # pred_dict_img[f'{tag}_diff'] = (
+        #   pred.squeeze()[1] - sample_target.squeeze()[1]).abs()
+        print(len(list(pred_dict_real.keys())))
 
       fig, axes = plot_images(
         list(pred_dict_real.values()),
-        cbar='none',
+        nrows=3, # ground-truth row, real prediction row, real difference row
+        cbar='one',
         vrange='individual',
-        fig_size=(9, 9),
-        shrink=0.15,
+        fig_size=(9, 3),
+        shrink=0.5,
         pad=0.02,
         cmap='coolwarm')
 
       # axes[0,0]
       for i, ax in enumerate(axes.flatten()):
-        ax.set_title( list(pred_dict_real.keys()) [i])
-        remove_frame(ax)
+        if list(pred_dict_real.keys())[i].startswith('placeholder'):
+          ax.remove()
+        else:
+          ax.set_title( list(pred_dict_real.keys()) [i])
+          remove_frame(ax)
 
       plt.suptitle(
         f'Real part. Wavespeed: {eval_config.kernel_type}, Freq: {eval_config.frequency}',
@@ -145,25 +164,25 @@ for eval_config.kernel_type in ['isotropic', 'anisotropic']:
         format="pdf", bbox_inches="tight")
 
       # imaginery part
-      fig, axes = plot_images(
-        list(pred_dict_img.values()),
-        cbar='none',
-        vrange='individual',
-        fig_size=(9, 9),
-        shrink=0.15,
-        pad=0.02,
-        cmap='coolwarm')
+      # fig, axes = plot_images(
+      #   list(pred_dict_img.values()),
+      #   cbar='none',
+      #   vrange='individual',
+      #   fig_size=(9, 9),
+      #   shrink=0.15,
+      #   pad=0.02,
+      #   cmap='coolwarm')
 
-      # axes[0,0]
-      for i, ax in enumerate(axes.flatten()):
-        ax.set_title( list(pred_dict_img.keys()) [i])
-        remove_frame(ax)
+      # # axes[0,0]
+      # for i, ax in enumerate(axes.flatten()):
+      #   ax.set_title( list(pred_dict_img.keys()) [i])
+      #   remove_frame(ax)
 
-      plt.suptitle(
-        f'Img part. Wavespeed: {eval_config.kernel_type}, Freq: {eval_config.frequency}',
-        y=0.62,)
+      # plt.suptitle(
+      #   f'Img part. Wavespeed: {eval_config.kernel_type}, Freq: {eval_config.frequency}',
+      #   y=0.62,)
 
-      plt.savefig(
-        f"{wavebench_figure_path}/model_out_img_{eval_config.kernel_type}_{eval_config.frequency}.pdf",
-        format="pdf", bbox_inches="tight")
+      # plt.savefig(
+      #   f"{wavebench_figure_path}/model_out_img_{eval_config.kernel_type}_{eval_config.frequency}.pdf",
+      #   format="pdf", bbox_inches="tight")
 
