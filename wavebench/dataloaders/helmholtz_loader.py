@@ -38,16 +38,16 @@ class HelmholtzDataset(torch.utils.data.Dataset):
         pressure_paths.append(
             get_files_with_extension(path, 'H@'))
 
-    if frequency == 1.0:
+    if frequency == 10:
       pressure_with_frequency = [a for a in flatten_list(pressure_paths)\
         if '1.00000E+01Hz' in a.split('/')[-1]]
-    elif frequency == 1.5:
+    elif frequency == 15:
       pressure_with_frequency = [a for a in flatten_list(pressure_paths)\
         if '1.50000E+01Hz' in a.split('/')[-1]]
-    elif frequency == 2.0:
+    elif frequency == 20:
       pressure_with_frequency = [a for a in flatten_list(pressure_paths)\
         if '2.00000E+01Hz' in a.split('/')[-1]]
-    elif frequency == 4.0:
+    elif frequency == 40:
       pressure_with_frequency = [a for a in flatten_list(pressure_paths)\
         if '4.00000E+01Hz' in a.split('/')[-1]]
     else:
@@ -91,7 +91,7 @@ class HelmholtzDataset(torch.utils.data.Dataset):
 # f'{wavebench_dataset_path}/time_harmonic/{kernel_type}_{frequency}.beton'
 def get_dataloaders_helmholtz(
       kernel_type='isotropic',
-      frequency=1.0,
+      frequency=10,
       train_batch_size=1,
       eval_batch_size=1,
       num_train_samples=49000,
@@ -104,7 +104,7 @@ def get_dataloaders_helmholtz(
 
   Args:
       kernel_type: can be `isotropic` or `anisotropic`.
-      frequency: can be 1.0, 1.5, 2.0, 4.0.
+      frequency: can be 10, 15, 20, 40 [Hz].
       train_batch_size (int, optional): batch size of training.
           Defaults to 1.
       test_batch_size (int, optional): batch size of testing.

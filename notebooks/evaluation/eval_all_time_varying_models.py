@@ -1,17 +1,20 @@
 """ Evaluate all models on the time-varying datasets"""
 import pprint
 import os
+import numpy as np
 from pathlib import Path
 import wandb
 import matplotlib.pyplot as plt
 import ml_collections
+import matplotlib.colors as colors
+
 from pytorch_lightning.loggers import WandbLogger
 from wavebench.dataloaders.rtc_loader import get_dataloaders_rtc_thick_lines, get_dataloaders_rtc_mnist
 from wavebench.dataloaders.is_loader import get_dataloaders_is_thick_lines, get_dataloaders_is_mnist
 from wavebench import wavebench_figure_path
 from wavebench.nn.pl_model_wrapper import LitModel
 from wavebench import wavebench_checkpoint_path
-from wavebench.plot_utils import plot_images, remove_frame
+from wavebench.plot_utils import plot_image, remove_ticks
 
 
 
@@ -152,19 +155,47 @@ for eval_config.problem in ['is', 'rtc']:
         pred = model(sample_input.unsqueeze(0).to(device)).detach().cpu().squeeze()
         pannel_dict[f'{setting}_{tag}'] = pred
 
-    fig, axes = plot_images(
-      list(pannel_dict.values()),
-      nrows=3,
-      cbar='one',
-      fig_size=(10, 6),
-      shrink=0.45,
-      pad=0.02,
-      cmap='coolwarm')
+    # fig, axes = plot_images(
+    #   list(pannel_dict.values()),
+    #   nrows=3,
+    #   cbar='one',
+    #   fig_size=(10, 6),
+    #   shrink=0.45,
+    #   pad=0.02,
+    #   cmap='coolwarm')
 
-    # axes[0,0]
+    # # axes[0,0]
+    # for i, ax in enumerate(axes.flatten()):
+    #   ax.set_title( list(pannel_dict.keys()) [i])
+    #   remove_frame(ax)
+
+    nrows = 3
+    ncols = 4
+    fig_size = (8, 6)
+    cbar_shrink = 0.7
+    x_list = list(pannel_dict.values())
+    for i, x in enumerate(x_list):
+      x_list[i] = np.asarray(x)
+
+    fig = plt.figure()
+    fig.set_size_inches(fig_size)
+    axes = fig.subplots(nrows, ncols)
+    im = np.empty(axes.shape, dtype=object)
+
+
+    for i, (x, ax_) in enumerate(zip(x_list, axes.flat)):
+      if i == 0 or i == 2:
+        im_, _ = plot_image(
+          x, ax=ax_, norm=colors.CenteredNorm(), cmap='seismic')
+      else:
+        im_, _ = plot_image(x, ax=ax_, vmin=0., vmax=1., cmap='jet')
+      im.flat[i] = im_
+      fig.colorbar(im_, ax=ax_, shrink=cbar_shrink)
+
+
     for i, ax in enumerate(axes.flatten()):
       ax.set_title( list(pannel_dict.keys()) [i])
-      remove_frame(ax)
+      remove_ticks(ax)
 
     plt.suptitle(
       f'Problem: {eval_config.problem}, Wavespeed: {eval_config.medium_type}',

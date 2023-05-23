@@ -13,7 +13,7 @@ helmholtz_dataset_path = os.path.join(
 
 
 for kernel_type in ['isotropic', 'anisotropic']:
-  for frequency in [1.0, 1.5, 2.0, 4.0]:
+  for frequency in [10, 15, 20, 40]:
     print(kernel_type, frequency)
     dataset = HelmholtzDataset(
       kernel_type=kernel_type,
