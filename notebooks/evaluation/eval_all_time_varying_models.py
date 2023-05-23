@@ -155,43 +155,27 @@ for eval_config.problem in ['is', 'rtc']:
         pred = model(sample_input.unsqueeze(0).to(device)).detach().cpu().squeeze()
         pannel_dict[f'{setting}_{tag}'] = pred
 
-    # fig, axes = plot_images(
-    #   list(pannel_dict.values()),
-    #   nrows=3,
-    #   cbar='one',
-    #   fig_size=(10, 6),
-    #   shrink=0.45,
-    #   pad=0.02,
-    #   cmap='coolwarm')
-
-    # # axes[0,0]
-    # for i, ax in enumerate(axes.flatten()):
-    #   ax.set_title( list(pannel_dict.keys()) [i])
-    #   remove_frame(ax)
-
     nrows = 3
     ncols = 4
-    fig_size = (8, 6)
+    fig_size = (10, 7.5)
     cbar_shrink = 0.7
     x_list = list(pannel_dict.values())
-    for i, x in enumerate(x_list):
-      x_list[i] = np.asarray(x)
+    for i in range(len(x_list)):
+      x_list[i] = np.asarray(x_list[i])
 
     fig = plt.figure()
     fig.set_size_inches(fig_size)
     axes = fig.subplots(nrows, ncols)
     im = np.empty(axes.shape, dtype=object)
 
-
     for i, (x, ax_) in enumerate(zip(x_list, axes.flat)):
-      if i == 0 or i == 2:
+      if i ==0 or i == 2:
         im_, _ = plot_image(
           x, ax=ax_, norm=colors.CenteredNorm(), cmap='seismic')
       else:
         im_, _ = plot_image(x, ax=ax_, vmin=0., vmax=1., cmap='jet')
       im.flat[i] = im_
       fig.colorbar(im_, ax=ax_, shrink=cbar_shrink)
-
 
     for i, ax in enumerate(axes.flatten()):
       ax.set_title( list(pannel_dict.keys()) [i])
@@ -205,50 +189,4 @@ for eval_config.problem in ['is', 'rtc']:
       f"{save_path}/{eval_config.problem}_{eval_config.medium_type}.pdf",
       format="pdf", bbox_inches="tight")
 
-
-    # idx = 1
-    # sample_input, sample_target = test_loader.dataset.__getitem__(idx)
-
-    # fig, axes = plt.subplots(1, 2, figsize=(8, 4))
-
-    # axes[0].imshow(sample_input.squeeze().numpy(), cmap='coolwarm')
-    # axes[0].set_title('Input')
-    # axes[1].imshow(sample_target.squeeze().numpy(), cmap='coolwarm')
-    # axes[1].set_title('Target')
-
-
-    # pred_dict = {
-    #   'input': sample_input.squeeze(),
-    #   'gt': sample_target.squeeze()}
-
-    # for i in range(len(model_dict.items()) - 2):
-    #   # placeholder for the plots; these plots will be removed later
-    #   pred_dict[f'placeholder_{i}'] = sample_target.squeeze()
-
-
-    # for tag, model in model_dict.items():
-    #   pred = model(
-    #     sample_input.unsqueeze(0).to(device)).detach().cpu().squeeze()
-    #   pred_dict[tag] = pred
-
-    # fig, axes = plot_images(
-    #   list(pred_dict.values()),
-    #   nrows=2,
-    #   cbar='one',
-    #   fig_size=(9, 4),
-    #   shrink=0.5,
-    #   pad=0.02,
-    #   cmap='coolwarm')
-
-    # # axes[0,0]
-    # for i, ax in enumerate(axes.flatten()):
-    #   if list(pred_dict.keys())[i].startswith('placeholder'):
-    #     ax.remove()
-    #   else:
-    #     ax.set_title( list(pred_dict.keys()) [i])
-    #     remove_frame(ax)
-
-    # plt.suptitle(
-    #   f'Problem: {eval_config.problem}, Init pressure: {eval_config.dataset_name}, Wavespeed: {eval_config.medium_type}',
-    #   y=1.0,)
 
