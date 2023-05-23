@@ -30,6 +30,13 @@ def remove_frame(ax):
   ax.get_xaxis().set_ticks([])
   ax.get_yaxis().set_ticks([])
 
+SPINE_COLOR = 'gray'
+def remove_ticks(ax):
+  for spine in ['top', 'right', 'left', 'bottom']:
+    ax.spines[spine].set_color(SPINE_COLOR)
+    ax.spines[spine].set_linewidth(0.5)
+  ax.get_xaxis().set_ticks([])
+  ax.get_yaxis().set_ticks([])
 
 def plot_image(x, fig=None, ax=None, **kwargs):
   """Plot image using matplotlib's :meth:`imshow` method.
@@ -75,7 +82,8 @@ def plot_image(x, fig=None, ax=None, **kwargs):
 
 
 def plot_images(x_list, nrows=1, ncols=-1, fig=None, vrange='equal',
-                cbar='auto', rect=None, fig_size=None, **kwargs):
+                cbar='auto', rect=None, fig_size=None,
+                zerocenter_cbar=False, **kwargs):
   """Plot multiple images using matplotlib's :meth:`imshow` method in
   subplots.
 
@@ -150,11 +158,18 @@ def plot_images(x_list, nrows=1, ncols=-1, fig=None, vrange='equal',
     fig.set_size_inches(fig_size)
   if isinstance(vrange, str):
     if vrange == 'equal':
-      vrange_ = [(min((np.min(x) for x in x_list)),
-                  max((np.max(x) for x in x_list)))] * len(x_list)
+      if zerocenter_cbar:
+        max_abs = max((np.max( np.abs(x)) for x in x_list))
+        vrange_ = [(-max_abs, max_abs) ] * len(x_list)
+      else:
+        vrange_ = [(min((np.min(x) for x in x_list)),
+                    max((np.max(x) for x in x_list)))] * len(x_list)
       VRANGE_EQUAL = True
     elif vrange == 'individual':
-      vrange_ = [(np.min(x), np.max(x)) for x in x_list]
+      if zerocenter_cbar:
+        vrange_ = [(-np.max(np.abs(x)), np.max(np.abs(x)) ) for x in x_list]
+      else:
+        vrange_ = [(np.min(x), np.max(x)) for x in x_list]
       VRANGE_EQUAL = False
     else:
       raise ValueError("`vrange` must be 'equal' or 'individual'")
