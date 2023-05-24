@@ -49,7 +49,7 @@ def benchmark(model, x, y):
   # START BENCHMARKING
   t_forward = []
   t_backward = []
-  for i in range(100):
+  for _ in range(100):
     t_fp, t_bp = measure(model, x, y)
     t_forward.append(t_fp)
     t_backward.append(t_bp)

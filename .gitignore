@@ -15,4 +15,5 @@ deprecated/
 *.h5
 *.pth
 /wavebench_dataset
+/internals
 

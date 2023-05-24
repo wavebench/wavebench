@@ -194,7 +194,8 @@ if __name__ == '__main__':
       for medium_type_ in ['gaussian_lens', 'grf_anisotropic', 'grf_isotropic']:
         print(problem, dataset_name_, medium_type_)
         if problem == 'rtc':
-          dataset_path = os.path.join(wavebench_dataset_path, "time_varying/rtc")
+          dataset_path = os.path.join(
+            wavebench_dataset_path, "time_varying/rtc")
           dataset = RtcDataset(
             dataset_name=dataset_name_,
             medium_type=medium_type_,

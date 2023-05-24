@@ -1,12 +1,15 @@
 """ Evaluate all models on the time-varying datasets"""
+
+#%%
 import pprint
 import os
-import numpy as np
 from pathlib import Path
+import numpy as np
+import torch
 import wandb
 import matplotlib.pyplot as plt
-import ml_collections
 import matplotlib.colors as colors
+import ml_collections
 
 from pytorch_lightning.loggers import WandbLogger
 from wavebench.dataloaders.rtc_loader import get_dataloaders_rtc_thick_lines, get_dataloaders_rtc_mnist
@@ -15,6 +18,7 @@ from wavebench import wavebench_figure_path
 from wavebench.nn.pl_model_wrapper import LitModel
 from wavebench import wavebench_checkpoint_path
 from wavebench.plot_utils import plot_image, remove_ticks
+from wavebench.nn.lploss import lp_loss
 
 
 
@@ -49,46 +53,75 @@ api = wandb.Api()
 
 pp = pprint.PrettyPrinter(depth=6)
 # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-device = 'cpu'
+device = 'cuda:0'
 
 eval_config = ml_collections.ConfigDict()
+eval_config.wandb_entity = 'tliu'
 
 save_path = f'{wavebench_figure_path}/time_varying'
 if not os.path.exists(save_path):
   os.makedirs(save_path)
 
 
+in_dist_test_performance_dict = {}
+ood_test_performance_dict = {}
+
+def evaluate_model_on_loader(model, loader, device=device):
+  model.eval()
+  model.to(device)
+  total_loss = 0
+  with torch.no_grad():
+    for sample_input, sample_target in loader:
+      pred = model(sample_input.to(device)).detach().cpu()
+      loss = lp_loss(pred, sample_target).item()
+      total_loss += loss
+
+  return total_loss/len(loader)
+
 # problem setting: can be 'is' or 'rtc'
-for eval_config.problem in ['is', 'rtc']:
+for eval_config.problem in [
+  'rtc',
+  'is'
+  ]:
 # for eval_config.problem in ['is']:
 
-  # medium_type setting: can be 'gaussian_lens' or 'grf_isotropic' or 'grf_anisotropic'
-  for eval_config.medium_type in ['gaussian_lens', 'grf_isotropic', 'grf_anisotropic']:
+  # medium_type setting: can be 'gaussian_lens'
+  # or 'grf_isotropic' or 'grf_anisotropic'
+  for eval_config.medium_type in [
+    'gaussian_lens',
+    'grf_isotropic',
+    'grf_anisotropic'
+    ]:
 
     if eval_config.problem == 'rtc':
       in_dist_test_loader = get_dataloaders_rtc_thick_lines(
         medium_type=eval_config.medium_type,
-        use_ffcv=False,
       )['test']
       ood_test_loader = get_dataloaders_rtc_mnist(
         medium_type=eval_config.medium_type,
-        use_ffcv=False,
       )
 
     elif eval_config.problem == 'is':
       in_dist_test_loader = get_dataloaders_is_thick_lines(
         medium_type=eval_config.medium_type,
-        use_ffcv=False,
       )['test']
       ood_test_loader = get_dataloaders_is_mnist(
         medium_type=eval_config.medium_type,
-        use_ffcv=False,
         )
     else:
       raise ValueError(
-        'Cannot find the dataset with the given settings:' +
-        f'problem: {eval_config.problem}, medium_type: {eval_config.medium_type}'
+        'Cannot find the dataset with the given settings:' +\
+        f'problem: {eval_config.problem}' +\
+        f'medium_type: {eval_config.medium_type}'
                         )
+
+    in_dist_test_performance_dict[
+      f'{eval_config.problem}_{eval_config.medium_type}'] = []
+
+    ood_test_performance_dict[
+      f'{eval_config.problem}_{eval_config.medium_type}'] = []
+
+
     model_dict = {}
 
     for model_filters in all_models:
@@ -98,7 +131,7 @@ for eval_config.problem in ['is', 'rtc']:
 
       project = f'{eval_config.problem}_{eval_config.medium_type}'
       runs = api.runs(
-        path=f"tliu/{project}",
+        path=f"{eval_config.wandb_entity}/{project}",
         filters=_model_filters)
 
       # make sure that there is a unique model that satisfies the filters
@@ -106,7 +139,8 @@ for eval_config.problem in ['is', 'rtc']:
 
       run_id = runs[0].id
 
-      checkpoint_reference = f"tliu/{project}/model-{run_id}:best"
+      checkpoint_reference = f"{eval_config.wandb_entity}/{project}" +\
+        f"/model-{run_id}:best"
       print(f'checkpoint: {checkpoint_reference}')
 
       # delete all the checkpoints that do not have aliases such as
@@ -133,11 +167,20 @@ for eval_config.problem in ['is', 'rtc']:
       pp.pprint(model.hparams.model_config)
 
       model_dict[model_tag] = model
-      # runs = api.runs(path="tliu/rtc_gaussian_lens")
 
-    idx = 1
-    in_dist_sample_input, in_dist_sample_target = in_dist_test_loader.dataset.__getitem__(idx)
-    ood_sample_input, ood_sample_target = ood_test_loader.dataset.__getitem__(idx)
+      in_dist_test_performance_dict[
+        f'{eval_config.problem}_{eval_config.medium_type}'].append(
+          evaluate_model_on_loader(model, in_dist_test_loader))
+
+      ood_test_performance_dict[
+        f'{eval_config.problem}_{eval_config.medium_type}'].append(
+          evaluate_model_on_loader(model, ood_test_loader))
+
+
+    in_dist_sample_input, in_dist_sample_target = next(iter(
+      in_dist_test_loader))
+    ood_sample_input, ood_sample_target = next(iter(
+      ood_test_loader))
 
     pannel_dict = {
       'in-distri input': in_dist_sample_input.squeeze(),
@@ -152,7 +195,11 @@ for eval_config.problem in ['is', 'rtc']:
       else:
         sample_input = ood_sample_input
       for tag, model in model_dict.items():
-        pred = model(sample_input.unsqueeze(0).to(device)).detach().cpu().squeeze()
+        model.eval()
+        model.to(device)
+        pred = model(
+          sample_input.to(device)).detach().cpu().squeeze()
+          # sample_input.unsqueeze(0).to(device)).detach().cpu().squeeze()
         pannel_dict[f'{setting}_{tag}'] = pred
 
     nrows = 3
@@ -160,8 +207,9 @@ for eval_config.problem in ['is', 'rtc']:
     fig_size = (10, 7.5)
     cbar_shrink = 0.7
     x_list = list(pannel_dict.values())
-    for i in range(len(x_list)):
-      x_list[i] = np.asarray(x_list[i])
+
+    for i, x in enumerate(x_list):
+      x_list[i] = np.asarray(x)
 
     fig = plt.figure()
     fig.set_size_inches(fig_size)
@@ -190,3 +238,24 @@ for eval_config.problem in ['is', 'rtc']:
       format="pdf", bbox_inches="tight")
 
 
+#%%
+
+import pandas as pd
+
+columns = [a['tag'] for a in all_models]
+in_dist_df = pd.DataFrame.from_dict(
+  in_dist_test_performance_dict, orient='index', columns=columns)
+
+# round the values
+for column in columns:
+  in_dist_df[column] = in_dist_df[column].round(3)
+in_dist_df
+
+# %%
+ood_df = pd.DataFrame.from_dict(
+  ood_test_performance_dict, orient='index', columns=columns)
+
+# round the values
+for column in columns:
+  ood_df[column] = ood_df[column].round(3)
+ood_df
