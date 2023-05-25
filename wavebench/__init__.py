@@ -1,8 +1,8 @@
 """ WaveBench: A Benchmark Suite for Wave-based Imaging Problems"""
 import os
+from wavebench.utils import get_project_root
 
-wavebench_path = os.path.dirname(
-  '/home/liu0003/Desktop/projects/wavebench/')
+wavebench_path = str(get_project_root())
 
 wavebench_dataset_path = os.path.join(
   wavebench_path, 'wavebench_dataset')
@@ -12,7 +12,3 @@ wavebench_checkpoint_path = os.path.join(
 
 wavebench_figure_path = os.path.join(
   wavebench_path, 'saved_figs')
-
-
-# wavebench_dataset_path = os.path.dirname(
-#   '/home/liu0003/Desktop/projects/wavebench/wavebench_dataset/')

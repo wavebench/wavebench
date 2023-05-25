@@ -1,6 +1,8 @@
 # WaveBench
 
-Welcome to WaveBench, a comprehensive collection of datasets designed for training machine learning-based solvers to wave propagation partial differential equations (PDEs).
+👋 Welcome to WaveBench!
+
+WaveBench provides a comprehensive collection of datasets designed for training machine learning-based solvers to wave propagation partial differential equations (PDEs).
 
 
 # Dataset Description
@@ -42,16 +44,27 @@ In IS, the aim is to predict the initial pressure $p(\cdot, 0)$ based on pressur
 <img src = "./saved_figs/dataset_demo/wavebench_is_demo.png" width=80%>
 </p>
 
-## Usage
+
+# Datasets and Model Checkpoints
+
+We provide datasets and pretrained machine learning models.
+
+We provide datasets in the `.beton` format that allows for fast dataloading with [FFCV loaders](https://ffcv.io/). The FFCV dadaloaders are drop-in replacements for PyTorch dataloaders but are optimized for increasing data throughput in model training.
+
+
+# Usage
+
+## Quick start: Explore Wavebench on Google Colab on your browser
 
 TODO
 
-## Citation
+## Install Wavebench on your machine
 
-If you use this benchmark dataset in your research, please cite our paper:
-
-TODO
+```
+conda create -y -n wavebench python=3.9 cupy pkg-config libjpeg-turbo opencv pytorch torchvision cudatoolkit=11.3 numba -c pytorch -c conda-forge
+conda activate wavebench
+pip install ffcv
+```
 
 ## License
-
-TODO
+MIT licensed. See `LICENSE.txt` file.
