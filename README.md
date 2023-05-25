@@ -1,17 +1,20 @@
 # WaveBench
 
-Wavebench provides a comprehensive collection of datasets for training machine learning-based solvers for wave propagation PDEs.
+Welcome to WaveBench, a comprehensive collection of datasets designed for training machine learning-based solvers to wave propagation partial differential equations (PDEs).
+
 
 # Dataset Description
 
-The benchmark dataset includes two variants of wave propagation problems: **time-harmonic** and **time-varying** ones.
+The benchmark dataset contains two variants of wave propagation problems, **time-harmonic** and **time-varying**.
+
 
 ## Time-harmonic wave problems
 
-In the time-harmonic wave problems, we aim to learn operator maps wavespeeds $c = c(\boldsymbol{x})$ with a spatial variable $\boldsymbol{x} \in \mathbb{R}^2$ to a pressure field $p = p(\boldsymbol{x}, \omega)$ with a prescribed frequency $\omega$. To this end, we create training dataset that consists of paired wavespeed and pressure field $\{(c_j, p_j)\}_{j}$. Below, we show samples of wavespeed $c$ and pressure field $p(\cdot, \omega)$ at different frequencies in our dataset.
+In the time-harmonic wave problems, we aim to learn an operator that maps wavespeeds $c = c(\boldsymbol{x})$ to a pressure field $p = p(\boldsymbol{x}, \omega)$ at a prescribed frequency $\omega$. Here, $\boldsymbol{x}$ is a spatial coordinate in 2D.
+
+The time-harmonic datasets consist of paired wavespeed and pressure fields $\{(c_j, p_j)\}_{j}$. The following illustrates samples of wavespeed $c$ and pressure field $p(\cdot, \omega)$ at different frequencies. 
 
 <br />
-
 <p align="center">
 <img src = "./saved_figs/dataset_demo/wavebench_helmholtz_demo.png" width=80%>
 </p>
@@ -19,20 +22,22 @@ In the time-harmonic wave problems, we aim to learn operator maps wavespeeds $c 
 
 ## Time-varying wave problems
 
-We consider two time-varying wave problems: the **reverse time continuation (RTC)** and the **Inverse Source (IS)** problem.
+Time-varying wave problems comprise two categories: **reverse time continuation** and **inverse source** problems.
 
+### Reverse time continuation (RTC)
 
-In **RTC**, our goal is to map the pressure field $p = p(\boldsymbol{x}, T)$ at the final time $T$ to the pressure field $p = p(\boldsymbol{x}, 0)$ at the initial time $0$. Traing samples of $p(\cdot, 0)$ and $p(\cdot, T)$ are shown below. Since the final pressure $p(\cdot, T)$ depends on both the initial pressure $p(\cdot, 0)$ and the wavespeed $c$, we create different versions of the dataset, each with a fixed wavespeed $c$ as a column of the below figure.
+The objective in **RTC** is to map the pressure field $p = p(\boldsymbol{x}, T)$ at the final time $T$ to the pressure field $p = p(\boldsymbol{x}, 0)$ at the initial time $0$. The figure below shows training samples of $p(\cdot, 0)$ and $p(\cdot, T)$. Various versions of the dataset are available, each simulated with a fixed wavespeed $c$ as shown in the top row. While the final pressure depends both on the initial pressure and the wavespeed, the mapping we aim to estimate is conditioned on a fixed wavespeed.
 
-### Inverse Source (IS)
-
+<br />
 <p align="center">
 <img src = "./saved_figs/dataset_demo/wavebench_rtc_demo.png" width=80%>
 </p>
 
-In IS, our goal is to predict the initial pressure $p(\cdot, 0)$ based on pressure measurements taken at certain boundary locations over a time span $[0, T]$. This dataset is closer to seismic imaging, where we can only measure the pressure field at the surface of the earth. We create different versions of the dataset, each with a fixed wavespeed $c$ as a column of the below figure.
+### Inverse source (IS)
 
+In IS, the aim is to predict the initial pressure $p(\cdot, 0)$ based on pressure measurements collected at specific boundary locations over a time interval $[0, T]$. This dataset is insipred by seismic imaging, where pressure field measurements are only feasible at the earth's surface. We offer different versions of this dataset, each with a fixed wavespeed $c$ as depicted in the columns below.
 
+<br />
 <p align="center">
 <img src = "./saved_figs/dataset_demo/wavebench_is_demo.png" width=80%>
 </p>
