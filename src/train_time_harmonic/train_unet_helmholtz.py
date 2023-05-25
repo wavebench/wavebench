@@ -116,7 +116,7 @@ def main():
   trainer.fit(
       model,
       train_dataloaders=loaders['train'],
-      val_dataloaders=loaders['test'])
+      val_dataloaders=loaders['val'])
 
 
 if __name__ == '__main__':

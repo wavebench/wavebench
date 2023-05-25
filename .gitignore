@@ -14,6 +14,6 @@ deprecated/
 .sync_5de6efbf0140.db-shm
 *.h5
 *.pth
-/wavebench_dataset
+/wavebench_dataset/
 /internals
 /wavebench.egg-info/
