@@ -64,7 +64,7 @@ We recommend unzipping the downloaded file at the root directory of this reposit
 |_📁 saved_figs
 |_📁 src
 |_📁 wavebench
-|_📁 wavebench_datasets  # <-- *The dataset folder you downloaded & upzipped.*
+|_📁 wavebench_datasets  # <-- The dataset folder you downloaded & upzipped.
   |_📁 time_harmonic
   |_📁 time_varying
 |_📄 .pylintrc
@@ -83,8 +83,8 @@ We provide Google colab notebooks to explore Wavebench. You can train a FNO or U
 
 |Title  | Notebooks |
 | --- | --- |
-| Train models on time-varying Wavebench datasets  | &nbsp; &nbsp; [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1wrmSgIRomwrLw68X6TLeUWEYOiTFPycl?usp=sharing)|
-| Train models on time-harmonic Wavebench datasets  | &nbsp; &nbsp; [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Ug8YRBv6VUrrf7iZxeaId3rBXsBnvqus?usp=sharing)|
+| Train models on time-varying Wavebench datasets  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1wrmSgIRomwrLw68X6TLeUWEYOiTFPycl?usp=sharing)|
+| Train models on time-harmonic Wavebench datasets  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Ug8YRBv6VUrrf7iZxeaId3rBXsBnvqus?usp=sharing)|
 
 
 
