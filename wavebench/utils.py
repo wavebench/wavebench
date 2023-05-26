@@ -1,13 +1,14 @@
+""" Utility functions for the WaveBench package. """
 import random
 import os
 import glob
+from pathlib import Path
 import numpy as np
 import torch
-from pathlib import Path
 
 
 def get_project_root() -> Path:
-    return Path(__file__).parent.parent
+  return Path(__file__).parent.parent
 
 def seed_everything(seed: int):
   """Seed everything for reproducibility"""

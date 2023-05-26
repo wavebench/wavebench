@@ -3,7 +3,7 @@ import argparse
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
-from pytorch_lightning.loggers import WandbLogger #TensorBoardLogger
+from pytorch_lightning.loggers import WandbLogger
 
 from wavebench import wavebench_path
 from wavebench.nn.pl_model_wrapper import LitModel

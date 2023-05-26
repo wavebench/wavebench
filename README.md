@@ -12,9 +12,9 @@ The benchmark dataset contains two variants of wave propagation problems, **time
 
 ## Time-harmonic wave problems
 
-In the time-harmonic wave problems, we aim to learn an operator that maps wavespeeds $c = c(\boldsymbol{x})$ to a pressure field $p = p(\boldsymbol{x}, \omega)$ at a prescribed frequency $\omega$. Here, $\boldsymbol{x}$ is a spatial coordinate in 2D.
+In the time-harmonic wave problems, we aim to learn a mapping that associates wavespeeds $c = c(\boldsymbol{x})$ with a pressure field $p = p(\boldsymbol{x}, \omega)$ at a prescribed frequency $\omega$. Here, $\boldsymbol{x}$ is a spatial coordinate in 2D.
 
-The time-harmonic datasets consist of paired wavespeed and pressure fields $\{(c_j, p_j)\}_{j}$. The following illustrates samples of wavespeed $c$ and pressure field $p(\cdot, \omega)$ at different frequencies. 
+The time-harmonic datasets consist of paired wavespeed and pressure fields $\{(c_j, p_j)\}_{j}$. The following illustrates samples of wavespeed $c$ and pressure field $p(\cdot, \omega)$ at different frequencies.
 
 <br />
 <p align="center">
@@ -37,7 +37,7 @@ The objective in **RTC** is to map the pressure field $p = p(\boldsymbol{x}, T)$
 
 ### Inverse source (IS)
 
-In IS, the aim is to predict the initial pressure $p(\cdot, 0)$ based on pressure measurements collected at specific boundary locations over a time interval $[0, T]$. This dataset is insipred by seismic imaging, where pressure field measurements are only feasible at the earth's surface. We offer different versions of this dataset, each with a fixed wavespeed $c$ as depicted in the columns below.
+In IS, the aim is to predict the initial pressure $p(\cdot, 0)$ based on pressure measurements collected at specific boundary locations over a time interval $[0, T]$. This dataset is inspired by seismic imaging, where pressure field measurements are only feasible at the earth's surface. We offer different versions of this dataset, each with a fixed wavespeed $c$ as depicted in the columns below.
 
 <br />
 <p align="center">
@@ -45,25 +45,60 @@ In IS, the aim is to predict the initial pressure $p(\cdot, 0)$ based on pressur
 </p>
 
 
-# Datasets and Model Checkpoints
+# Dataset
 
-We provide datasets and pretrained machine learning models.
+Our datasets are [available here](https://drive.switch.ch/index.php/s/L7LeTyb9B9HMuG6). These datasets are in the `.beton` format that allows for fast data loading with [FFCV loaders](https://ffcv.io/). The FFCV dadaloaders are drop-in replacements for PyTorch dataloaders but are optimized for increasing data throughput in model training.
 
-We provide datasets in the `.beton` format that allows for fast dataloading with [FFCV loaders](https://ffcv.io/). The FFCV dadaloaders are drop-in replacements for PyTorch dataloaders but are optimized for increasing data throughput in model training.
+
+You can download these datasets using the following command:
+
+```
+curl -O -J https://drive.switch.ch/index.php/s/L7LeTyb9B9HMuG6/download
+```
+
+We recommend unzipping the downloaded file at the root directory of this repository. Inside the unzipped wavebench_datasets folder, you will find all the datasets. The directory structure of the repository should resemble the following:
+
+```
+📂 wavebench
+|_📁 notebooks
+|_📁 saved_figs
+|_📁 src
+|_📁 wavebench
+|_📁 wavebench_datasets  # <-- *The dataset folder you downloaded & upzipped.*
+  |_📁 time_harmonic
+  |_📁 time_varying
+|_📄 .pylintrc
+|_📄 LICENSE.txt
+|_📄 README.md
+|_📄 setup.py
+```
+
 
 
 # Usage
 
-## Quick start: Explore Wavebench on Google Colab on your browser
+## Quick start: Explore Wavebench on Google Colab
 
-TODO
+We provide Google colab notebooks to explore Wavebench. You can train a FNO or U-Net on one of the Wavebench datasets on your browser without installing or downloading anything manually.
 
-## Install Wavebench on your machine
+|Title  | Notebooks |
+| --- | --- |
+| Train models on time-varying Wavebench datasets  | &nbsp; &nbsp; [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1wrmSgIRomwrLw68X6TLeUWEYOiTFPycl?usp=sharing)|
+| Train models on time-harmonic Wavebench datasets  | &nbsp; &nbsp; [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Ug8YRBv6VUrrf7iZxeaId3rBXsBnvqus?usp=sharing)|
+
+
+
+## Install Wavebench locally
+
+We suggest using Conda to install Wavebench. The following commands will create a new Conda environment named `wavebench` and install the dependencies.
 
 ```
 conda create -y -n wavebench python=3.9 cupy pkg-config libjpeg-turbo opencv pytorch torchvision cudatoolkit=11.3 numba -c pytorch -c conda-forge
 conda activate wavebench
-pip install ffcv
+pip install ffcv matplotlib jupyterlab pytorch-lightning einops ml-collections wandb
+git clone https://github.com/liutianlin0121/wavebench.git
+cd wavebench
+pip install -e .
 ```
 
 ## License
