@@ -4,6 +4,16 @@
 
 WaveBench provides a comprehensive collection of datasets designed for training machine learning-based solvers to wave propagation partial differential equations (PDEs).
 
+## Quick start: Explore Wavebench on Google Colab
+
+We offer Google Colab notebooks to explore Wavebench. With these notebooks, you can easily train a PDE surrogate, such as FNO or U-Net, on one of the Wavebench datasets directly in your browser. No manual installation or downloads are required.
+
+|Title  | Notebooks |
+| --- | --- |
+| Train models on time-varying Wavebench datasets  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1wrmSgIRomwrLw68X6TLeUWEYOiTFPycl?usp=sharing)|
+| Train models on time-harmonic Wavebench datasets  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Ug8YRBv6VUrrf7iZxeaId3rBXsBnvqus?usp=sharing)|
+
+
 
 # Dataset Description
 
@@ -45,6 +55,24 @@ In IS, the aim is to predict the initial pressure $p(\cdot, 0)$ based on pressur
 </p>
 
 
+# Usage
+
+## Explore on Google Colab
+We provide Google Colab notebooks for the purpose of exploring Wavebench. You can find the links to these notebooks in the table of the "Quick start" section.
+
+## Install Wavebench locally
+
+We suggest using Conda to install Wavebench. The following commands will create a new Conda environment named `wavebench` and install the dependencies.
+
+```
+conda create -y -n wavebench python=3.9 cupy pkg-config libjpeg-turbo opencv pytorch torchvision cudatoolkit=11.3 numba -c pytorch -c conda-forge
+conda activate wavebench
+pip install ffcv matplotlib jupyterlab pytorch-lightning einops ml-collections wandb
+git clone https://github.com/liutianlin0121/wavebench.git
+cd wavebench
+pip install -e .
+```
+
 # Dataset
 
 Our datasets are [available here](https://drive.switch.ch/index.php/s/L7LeTyb9B9HMuG6). These datasets are in the `.beton` format that allows for fast data loading with [FFCV loaders](https://ffcv.io/). The FFCV dadaloaders are drop-in replacements for PyTorch dataloaders but are optimized for increasing data throughput in model training.
@@ -56,7 +84,7 @@ You can download these datasets using the following command:
 curl -O -J https://drive.switch.ch/index.php/s/L7LeTyb9B9HMuG6/download
 ```
 
-We recommend unzipping the downloaded file at the root directory of this repository. Inside the unzipped wavebench_datasets folder, you will find all the datasets. The directory structure of the repository should resemble the following:
+We recommend unzipping the downloaded file `wavebench_datasets.zip` at the root directory of this repository. Inside the unzipped `wavebench_datasets` folder, you will find all the datasets. The overal directory structure should be the following:
 
 ```
 📂 wavebench
@@ -74,32 +102,6 @@ We recommend unzipping the downloaded file at the root directory of this reposit
 ```
 
 
-
-# Usage
-
-## Quick start: Explore Wavebench on Google Colab
-
-We provide Google colab notebooks to explore Wavebench. You can train a FNO or U-Net on one of the Wavebench datasets on your browser without installing or downloading anything manually.
-
-|Title  | Notebooks |
-| --- | --- |
-| Train models on time-varying Wavebench datasets  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1wrmSgIRomwrLw68X6TLeUWEYOiTFPycl?usp=sharing)|
-| Train models on time-harmonic Wavebench datasets  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Ug8YRBv6VUrrf7iZxeaId3rBXsBnvqus?usp=sharing)|
-
-
-
-## Install Wavebench locally
-
-We suggest using Conda to install Wavebench. The following commands will create a new Conda environment named `wavebench` and install the dependencies.
-
-```
-conda create -y -n wavebench python=3.9 cupy pkg-config libjpeg-turbo opencv pytorch torchvision cudatoolkit=11.3 numba -c pytorch -c conda-forge
-conda activate wavebench
-pip install ffcv matplotlib jupyterlab pytorch-lightning einops ml-collections wandb
-git clone https://github.com/liutianlin0121/wavebench.git
-cd wavebench
-pip install -e .
-```
 
 ## License
 MIT licensed. See `LICENSE.txt` file.
