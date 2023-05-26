@@ -4,9 +4,9 @@
 
 WaveBench provides a comprehensive collection of datasets designed for training machine learning-based solvers to wave propagation partial differential equations (PDEs).
 
-## Quick start: Explore Wavebench on Google Colab
+# Quick start: Explore Wavebench on Google Colab
 
-We offer Google Colab notebooks to explore Wavebench. With these notebooks, you can easily train a PDE surrogate, such as FNO or U-Net, on one of the Wavebench datasets directly in your browser. No manual installation or downloads are required.
+We provide Google Colab notebooks to explore Wavebench. With these notebooks, you can easily train a PDE surrogate, such as FNO or U-Net, on one of the Wavebench datasets directly in your browser. No manual installation or downloads are required.
 
 |Title  | Notebooks |
 | --- | --- |
@@ -58,9 +58,9 @@ In IS, the aim is to predict the initial pressure $p(\cdot, 0)$ based on pressur
 # Usage
 
 ## Explore on Google Colab
-We provide Google Colab notebooks for the purpose of exploring Wavebench. You can find the links to these notebooks in the table of the "Quick start" section.
+We provide Google Colab notebooks for the purpose of exploring Wavebench. You can find the links to these notebooks in the table of the "Quick start" section above.
 
-## Install Wavebench locally
+## Install Wavebench
 
 We suggest using Conda to install Wavebench. The following commands will create a new Conda environment named `wavebench` and install the dependencies.
 
@@ -84,7 +84,7 @@ You can download these datasets using the following command:
 curl -O -J https://drive.switch.ch/index.php/s/L7LeTyb9B9HMuG6/download
 ```
 
-We recommend unzipping the downloaded file `wavebench_datasets.zip` at the root directory of this repository. Inside the unzipped `wavebench_datasets` folder, you will find all the datasets. The overal directory structure should be the following:
+We recommend unzipping the downloaded file `wavebench_datasets.zip` at the root directory of this repository. Inside the unzipped `wavebench_datasets` folder, you will find all the datasets. That is, the overal directory structure should be the following:
 
 ```
 📂 wavebench
