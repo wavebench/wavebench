@@ -38,7 +38,7 @@ Time-varying wave problems comprise two categories: **reverse time continuation*
 
 ### Reverse time continuation (RTC)
 
-The objective in **RTC** is to map the pressure field $p = p(\boldsymbol{x}, T)$ at the final time $T$ to the pressure field $p = p(\boldsymbol{x}, 0)$ at the initial time $0$. The figure below shows training samples of $p(\cdot, 0)$ and $p(\cdot, T)$. Various versions of the dataset are available, each simulated with a fixed wavespeed $c$ as shown in the top row. While the final pressure depends both on the initial pressure and the wavespeed, the mapping we aim to estimate is conditioned on a fixed wavespeed.
+The objective in **RTC** is to map the pressure field $p = p(\boldsymbol{x}, T)$ at the final time $T$ to the pressure field $p = p(\boldsymbol{x}, 0)$ at the initial time $0$. The figure below shows training samples of $p(\cdot, 0)$ and $p(\cdot, T)$. Various versions of the dataset are available, each simulated with a fixed wavespeed $c$ as shown in the top row. While the final pressure depends both on the initial pressure and the wavespeed, the mapping we aim to estimate is based on a fixed wavespeed.
 
 <br />
 <p align="center">
@@ -47,7 +47,7 @@ The objective in **RTC** is to map the pressure field $p = p(\boldsymbol{x}, T)$
 
 ### Inverse source (IS)
 
-In IS, the aim is to predict the initial pressure $p(\cdot, 0)$ based on pressure measurements collected at specific boundary locations over a time interval $[0, T]$. This dataset is inspired by seismic imaging, where pressure field measurements are only feasible at the earth's surface. We offer different versions of this dataset, each with a fixed wavespeed $c$ as depicted in the columns below.
+In IS, the aim is to predict the initial pressure $p(\cdot, 0)$ based on pressure measurements collected at specific boundary locations over a time interval $[0, T]$. This dataset is inspired by seismic imaging, where pressure field measurements are only feasible at the earth's surface. We offer different versions of this dataset, each with a fixed wavespeed $c$ as depicted in the first row.
 
 <br />
 <p align="center">
@@ -99,6 +99,17 @@ We recommend unzipping the downloaded file `wavebench_datasets.zip` at the root 
 |_📄 LICENSE.txt
 |_📄 README.md
 |_📄 setup.py
+```
+
+# Checkpoints of baseline models
+
+We provide checkpoints of baseline U-Nets and FNOs [here](https://drive.google.com/drive/folders/15d-fdKlJISFFenlr-rAo8LWbAwd43bCV?usp=share_link). These checkpoints can be used to reproduce the results in our paper. The checkpoints are in the `.ckpt` format and can be loaded with PyTorch Lightning's `load_from_checkpoint` function.
+
+```python
+from wavebench.nn.pl_model_wrapper import LitModel
+
+model = LitModel.load_from_checkpoint("path/to/model.ckpt")
+model.eval()
 ```
 
 
