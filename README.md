@@ -103,7 +103,7 @@ We recommend unzipping the downloaded file `wavebench_datasets.zip` at the root 
 
 # Checkpoints of baseline models
 
-We provide checkpoints of baseline U-Nets and FNOs [here](https://drive.google.com/drive/folders/15d-fdKlJISFFenlr-rAo8LWbAwd43bCV?usp=share_link). These checkpoints can be used to reproduce the results in our paper. The checkpoints are in the `.ckpt` format and can be loaded with PyTorch Lightning's `load_from_checkpoint` function.
+We provide checkpoints of baseline U-Nets and FNOs [here](https://drive.google.com/drive/folders/11xLtRWP3q31ki_r4vsV09yM84BPffcJU?usp=sharing). These checkpoints can be used to reproduce the results in our paper (preprint in preparation). The checkpoints are in the `.ckpt` format and can be loaded with PyTorch Lightning's `load_from_checkpoint` function.
 
 ```python
 from wavebench.nn.pl_model_wrapper import LitModel
@@ -112,7 +112,9 @@ model = LitModel.load_from_checkpoint("path/to/model.ckpt")
 model.eval()
 ```
 
+# Citation
 
+We are preparing a preprint for this work.
 
 ## License
 MIT licensed. See `LICENSE.txt` file.
