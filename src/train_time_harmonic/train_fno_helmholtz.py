@@ -17,8 +17,8 @@ parser.add_argument('--batch_size', type=int, default=32,
     help='The mini-batch size for training.')
 parser.add_argument('--kernel_type', type=str, default='isotropic',
     help='Can be `isotropic` or `anisotropic`.')
-parser.add_argument('--frequency', type=float, default=1.0,
-    help='Can be 1.0, 1.5, 2.0, 4.0 ')
+parser.add_argument('--frequency', type=float, default=10,
+    help='Can be 10, 15, 20, 40 ')
 
 
 # Model settings
