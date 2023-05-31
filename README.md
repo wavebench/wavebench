@@ -68,7 +68,7 @@ We suggest using Conda to install Wavebench. The following commands will create 
 conda create -y -n wavebench python=3.9 cupy pkg-config libjpeg-turbo opencv pytorch torchvision cudatoolkit=11.3 numba -c pytorch -c conda-forge
 conda activate wavebench
 pip install ffcv matplotlib jupyterlab pytorch-lightning einops ml-collections wandb
-git clone https://github.com/liutianlin0121/wavebench.git
+git clone https://github.com/wavebench/wavebench.git
 cd wavebench
 pip install -e .
 ```
