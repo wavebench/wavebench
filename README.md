@@ -1,8 +1,13 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8015145.svg)](https://doi.org/10.5281/zenodo.8015145)
+
+
 # WaveBench
 
 👋 Welcome to WaveBench!
 
 WaveBench provides a comprehensive collection of datasets designed for training machine learning-based solvers to wave propagation partial differential equations (PDEs).
+
+Our datasets are [available on Zenodo](https://zenodo.org/record/8015145).
 
 # Quick start: Explore Wavebench on Google Colab
 
@@ -75,16 +80,16 @@ pip install -e .
 
 # Dataset
 
-Our datasets are [available here](https://drive.switch.ch/index.php/s/L7LeTyb9B9HMuG6). These datasets are in the `.beton` format that allows for fast data loading with [FFCV loaders](https://ffcv.io/). The FFCV dadaloaders are drop-in replacements for PyTorch dataloaders but are optimized for increasing data throughput in model training.
+Our datasets are available on [the Zenodo page](https://zenodo.org/record/8015145). It has the persistent DOI `10.5281/zenodo.8015144`. We also host the datasets using on the [SwitchDrive link here](https://drive.switch.ch/index.php/s/L7LeTyb9B9HMuG6). These datasets are in the `.beton` format that allows for fast data loading with [FFCV loaders](https://ffcv.io/). The FFCV dadaloaders are drop-in replacements for PyTorch dataloaders but are optimized for increasing data throughput in model training.
 
 
-You can download these datasets using the following command:
+To download our datasets from Zenodo page, visit [the Zenodo page](https://zenodo.org/record/8015145). You can also download these datasets from SwitchDrive using the following command:
 
 ```
 curl -O -J https://drive.switch.ch/index.php/s/L7LeTyb9B9HMuG6/download
 ```
 
-We recommend unzipping the downloaded file `wavebench_datasets.zip` at the root directory of this repository. Inside the unzipped `wavebench_datasets` folder, you will find all the datasets. That is, the overal directory structure should be the following:
+Unzip the downloaded file `wavebench_datasets.zip` at the root directory of this repository. Inside the unzipped `wavebench_datasets` folder, you will find all the datasets. That is, the overal directory structure should be the following:
 
 ```
 📂 wavebench
