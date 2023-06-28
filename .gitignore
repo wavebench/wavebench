@@ -16,4 +16,5 @@ deprecated/
 *.pth
 /wavebench_dataset/
 /internals
+/wavebench/internals
 /wavebench.egg-info/

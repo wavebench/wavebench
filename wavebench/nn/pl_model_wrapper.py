@@ -1,7 +1,6 @@
 """Pytorch lightning wrapper for models"""""
 import torch
 import pytorch_lightning as pl
-# from neuralop.models import FNO2d
 from wavebench.nn.unet import UNet
 from wavebench.nn.fno import FNO2d
 from wavebench.nn.lploss import LpLoss

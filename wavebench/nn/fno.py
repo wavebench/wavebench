@@ -26,38 +26,49 @@ class Conv1x1(nn.Module):
     return self.conv1x1(x)
 
 
-class SpectralConv2d(nn.Module):
-  """
-  2D Fourier layer. It does FFT, linear transform, and Inverse FFT.
-  """
-  def __init__(self, in_channels, out_channels, modes1, modes2):
-    super(SpectralConv2d, self).__init__()
+# Complex multiplication 2d
+def batchmul2d(x, weights):
+  # (batch, in_ch, x,y ), (in_ch, out_channel, x,y) -> (batch, out_ch, x,y)
+  return torch.einsum("bixy,ioxy->boxy", x, weights)
 
+
+class SpectralConv2d(nn.Module):
+  """2D Fourier layer. Does FFT, linear transform, and Inverse FFT.
+  Implemented in a way to allow multi-gpu training.
+  Args:
+    in_channels (int): Number of input channels
+    out_channels (int): Number of output channels
+    modes1 (int): Number of Fourier modes to keep in the 1st spatial direction
+    modes2 (int): Number of Fourier modes to keep in the 2nd spatial direction
+
+  Taken from:
+    https://github.com/microsoft/pdearena/blob/main/pdearena/modules/fourier.py
+  """
+
+  def __init__(self, in_channels: int, out_channels: int,
+                modes1: int, modes2: int):
+    super().__init__()
 
     self.in_channels = in_channels
     self.out_channels = out_channels
-
     # Number of Fourier modes to multiply, at most floor(N/2) + 1
     self.modes1 = modes1
     self.modes2 = modes2
+
     self.scale = 1 / (in_channels * out_channels)
     self.weights1 = nn.Parameter(
         self.scale * torch.rand(
-            in_channels,
-            out_channels,
-            self.modes1,
-            self.modes2,
-            dtype=torch.cfloat))
-
+          in_channels, out_channels, self.modes1, self.modes2, 2,
+          dtype=torch.float32)
+    )
     self.weights2 = nn.Parameter(
         self.scale * torch.rand(
-            in_channels,
-            out_channels,
-            self.modes1,
-            self.modes2,
-            dtype=torch.cfloat))
+          in_channels, out_channels, self.modes1, self.modes2, 2,
+          dtype=torch.float32)
+    )
 
   def forward(self, x):
+    # pylint: disable=missing-function-docstring
     batchsize = x.shape[0]
     # Compute Fourier coeffcients up to factor of e^(- something constant)
     x_ft = torch.fft.rfft2(x)
@@ -67,26 +78,84 @@ class SpectralConv2d(nn.Module):
         batchsize,
         self.out_channels,
         x.size(-2),
-        x.size(-1)//2 + 1,
+        x.size(-1) // 2 + 1,
         dtype=torch.cfloat,
-        device=x.device)
-
-    out_ft[:, :, :self.modes1, :self.modes2] = \
-        self.compl_mul2d(
-            x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
-
-    out_ft[:, :, -self.modes1:, :self.modes2] = \
-        self.compl_mul2d(
-            x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
+        device=x.device,
+    )
+    out_ft[:, :, : self.modes1, : self.modes2] = batchmul2d(
+        x_ft[:, :, : self.modes1, : self.modes2],
+        torch.view_as_complex(self.weights1)
+    )
+    out_ft[:, :, -self.modes1 :, : self.modes2] = batchmul2d(
+        x_ft[:, :, -self.modes1 :, : self.modes2],
+        torch.view_as_complex(self.weights2)
+    )
 
     # Return to physical space
     x = torch.fft.irfft2(out_ft, s=(x.size(-2), x.size(-1)))
     return x
 
-  def compl_mul2d(self, input, weights):
-    """Complex multiplication. """
-    # (B, C_in, x, y), (C_in, C_out, x,y) -> (B, C_out, x, y)
-    return torch.einsum("bixy, ioxy -> boxy", input, weights)
+# class SpectralConv2d(nn.Module):
+#   """
+#   2D Fourier layer. It does FFT, linear transform, and Inverse FFT.
+#   """
+#   def __init__(self, in_channels, out_channels, modes1, modes2):
+#     super(SpectralConv2d, self).__init__()
+
+
+#     self.in_channels = in_channels
+#     self.out_channels = out_channels
+
+#     # Number of Fourier modes to multiply, at most floor(N/2) + 1
+#     self.modes1 = modes1
+#     self.modes2 = modes2
+#     self.scale = 1 / (in_channels * out_channels)
+#     self.weights1 = nn.Parameter(
+#         self.scale * torch.rand(
+#             in_channels,
+#             out_channels,
+#             self.modes1,
+#             self.modes2,
+#             dtype=torch.cfloat))
+
+#     self.weights2 = nn.Parameter(
+#         self.scale * torch.rand(
+#             in_channels,
+#             out_channels,
+#             self.modes1,
+#             self.modes2,
+#             dtype=torch.cfloat))
+
+#   def forward(self, x):
+#     batchsize = x.shape[0]
+#     # Compute Fourier coeffcients up to factor of e^(- something constant)
+#     x_ft = torch.fft.rfft2(x)
+
+#     # Multiply relevant Fourier modes
+#     out_ft = torch.zeros(
+#         batchsize,
+#         self.out_channels,
+#         x.size(-2),
+#         x.size(-1)//2 + 1,
+#         dtype=torch.cfloat,
+#         device=x.device)
+
+#     out_ft[:, :, :self.modes1, :self.modes2] = \
+#         self.compl_mul2d(
+#             x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
+
+#     out_ft[:, :, -self.modes1:, :self.modes2] = \
+#         self.compl_mul2d(
+#             x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
+
+#     # Return to physical space
+#     x = torch.fft.irfft2(out_ft, s=(x.size(-2), x.size(-1)))
+#     return x
+
+#   def compl_mul2d(self, input, weights):
+#     """Complex multiplication. """
+#     # (B, C_in, x, y), (C_in, C_out, x,y) -> (B, C_out, x, y)
+#     return torch.einsum("bixy, ioxy -> boxy", input, weights)
 
 
 class FourierLayer2d(nn.Module):
