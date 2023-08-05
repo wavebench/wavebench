@@ -3,6 +3,7 @@ import torch
 import pytorch_lightning as pl
 from wavebench.nn.unet import UNet
 from wavebench.nn.fno import FNO2d
+from wavebench.nn.uno import UNO2d
 from wavebench.nn.lploss import LpLoss
 
 def get_model(model_config):
@@ -12,6 +13,8 @@ def get_model(model_config):
     model = UNet(**model_config)
   elif model_name.lower() == 'fno':
     model = FNO2d(**model_config)
+  elif model_name.lower() == 'uno':
+    model = UNO2d(**model_config)
   else:
     raise ValueError('Unknown model name: {}'.format(model_name))
   return model

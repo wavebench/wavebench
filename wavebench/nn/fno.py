@@ -116,7 +116,8 @@ class FourierLayer2d(nn.Module):
                num_in_channels: int,
                num_out_channels: int,
                modes1: int,
-               modes2: int):
+               modes2: int,
+               pointwise_init_scale: int = 6):
     super(FourierLayer2d, self).__init__()
     self.num_in_channels = num_in_channels
     self.num_out_channels = num_out_channels
@@ -129,7 +130,8 @@ class FourierLayer2d(nn.Module):
         self.modes2)
     self.pointwise_conv = Conv1x1(
         self.num_in_channels,
-        self.num_out_channels)
+        self.num_out_channels,
+        pointwise_init_scale)
 
   def forward(self, x, sidelen_h=None, sidelen_w=None):
     x1 = self.global_conv(x, sidelen_h, sidelen_w)
@@ -137,6 +139,16 @@ class FourierLayer2d(nn.Module):
     x = x1 + x2
     x = F.gelu(x)
     return x
+
+
+def concat_coordinates(x):
+  batchsize, _, size_vert, size_horiz = x.shape
+  tensors = (torch.linspace(-1, 1, steps=size_vert),
+              torch.linspace(-1, 1, steps=size_horiz))
+  mgrid = torch.stack(torch.meshgrid(*tensors, indexing='ij'), dim=0)
+  mgrid = repeat(mgrid, 'c x y -> b c x y', b=batchsize).to(x.device)
+  encoded = torch.cat((x, mgrid), dim=1)
+  return encoded
 
 
 class FNO2d(nn.Module):
@@ -181,7 +193,7 @@ class FNO2d(nn.Module):
     )
 
   def forward(self, x):
-    x = self.concat_coordinates(x)
+    x = concat_coordinates(x)
     x = self.lifter(x)
     x = F.pad(x, [0,self.padding, 0,self.padding])
 
@@ -190,12 +202,3 @@ class FNO2d(nn.Module):
     x = x[..., :-self.padding, :-self.padding]
     x = self.projector(x)
     return x
-
-  def concat_coordinates(self, x):
-    batchsize, _, size_vert, size_horiz = x.shape
-    tensors = (torch.linspace(-1, 1, steps=size_vert),
-                torch.linspace(-1, 1, steps=size_horiz))
-    mgrid = torch.stack(torch.meshgrid(*tensors, indexing='ij'), dim=0)
-    mgrid = repeat(mgrid, 'c x y -> b c x y', b=batchsize).to(x.device)
-    encoded = torch.cat((x, mgrid), dim=1)
-    return encoded
