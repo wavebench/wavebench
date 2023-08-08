@@ -55,7 +55,7 @@ def get_dataloaders_helmholtz(
 
   dataloaders = {
     x: Loader(
-      f'{wavebench_dataset_path}/time_harmonic/{kernel_type}_{frequency}.beton',
+      f'{wavebench_dataset_path}/time_harmonic/{kernel_type}_{int(frequency)}.beton',
       batch_size=batch_sizes[x],
       num_workers=num_workers,
       order=OrderOption.RANDOM if x == 'train' else OrderOption.SEQUENTIAL,
