@@ -1,4 +1,5 @@
 # %%
+import time
 import os
 import ml_collections
 import numpy as np
@@ -86,7 +87,13 @@ max_wavespeed - min_wavespeed) + min_wavespeed
 
 # only a single example is generated
 config.source_list = sorted(absolute_file_paths(data_path))[1:2]
+
+start_time = time.time()
 initial_pressure_dataset, boundary_measurement_dataset = generate_is(config)
+time_last = time.time() - start_time
+print(f'time_last {time_last}s')
+
+
 jwave_measurements = boundary_measurement_dataset[0]
 
 

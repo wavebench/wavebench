@@ -49,6 +49,9 @@ class LitModel(pl.LightningModule):
       self.loss_fun = self.l1_loss
     elif loss_fun_type == 'relative_l2':
       self.loss_fun = self.lp_loss
+    elif loss_fun_type == 'combined_mse_relative_l2':
+      self.loss_fun = lambda x, y: self.lp_loss(x, y) + self.mse_loss(x, y)
+
     else:
       raise ValueError(
         'Unknown loss function type: {}'.format(loss_fun_type))

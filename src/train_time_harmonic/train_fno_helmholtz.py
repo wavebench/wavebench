@@ -19,7 +19,9 @@ parser.add_argument('--kernel_type', type=str, default='isotropic',
     help='Can be `isotropic` or `anisotropic`.')
 parser.add_argument('--frequency', type=float, default=10,
     help='Can be 10, 15, 20, 40 ')
-
+parser.add_argument('--is_elastic', default=False,
+    type=lambda x: (str(x).lower() == 'true'),
+    help='whether or not to use elastic time-harmonic wave equation')
 
 # Model settings
 parser.add_argument('--num_layers', type=int, default=4,
@@ -56,18 +58,27 @@ def main():
       'num_workers': args.num_workers,
       'kernel_type': args.kernel_type,
       'frequency': args.frequency,
+      'is_elastic': args.is_elastic,
       }
 
   loaders = get_dataloaders_helmholtz(
       **dataset_setting_dict)
+
+
+  if args.is_elastic:
+    num_in_channels = 2
+    num_out_channels = 4
+  else:
+    num_in_channels = 1
+    num_out_channels = 2
 
   model_config = {
     'model_name': 'fno',
     'modes1': 16,
     'modes2': 16,
     'hidden_width': 64,
-    'num_in_channels': 1,
-    'num_out_channels': 2,
+    'num_in_channels': num_in_channels,
+    'num_out_channels': num_out_channels,
     'num_hidden_layers': args.num_layers
     }
 
@@ -91,7 +102,9 @@ def main():
       save_top_k=1,
       mode='min')
 
-  task_name = f'helmholtz_{args.kernel_type}_{args.frequency}'
+  wavetype = 'elastic' if args.is_elastic else 'acoustic'
+
+  task_name = f'helmholtz_{wavetype}_{args.kernel_type}_{int(args.frequency)}'
 
   model_save_dir = str(wavebench_path + f'/saved_models/{task_name}')
 

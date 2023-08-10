@@ -192,6 +192,7 @@ class FNO2d(nn.Module):
       Conv1x1(projection_channels, num_out_channels),
     )
 
+
   def forward(self, x):
     x = concat_coordinates(x)
     x = self.lifter(x)

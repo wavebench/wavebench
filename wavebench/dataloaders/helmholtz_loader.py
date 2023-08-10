@@ -17,7 +17,8 @@ def get_dataloaders_helmholtz(
       num_train_samples=49000,
       num_val_samples=500,
       num_test_samples=500,
-      num_workers=1
+      num_workers=1,
+      is_elastic=False
       ):
   """Prepare loaders of the Helmholtz dataset.
 
@@ -53,9 +54,16 @@ def get_dataloaders_helmholtz(
     'test': indices[num_train_samples+num_val_samples:]
   }
 
+  if is_elastic:
+    wavetype = 'elastic'
+    if kernel_type != 'anisotropic':
+      raise ValueError('Elastic kernel_type must be anisotropic')
+  else:
+    wavetype = 'acoustic'
+
   dataloaders = {
     x: Loader(
-      f'{wavebench_dataset_path}/time_harmonic/{kernel_type}_{int(frequency)}.beton',
+      f'{wavebench_dataset_path}/time_harmonic/{wavetype}/{kernel_type}_{wavetype}_{int(frequency)}.beton',
       batch_size=batch_sizes[x],
       num_workers=num_workers,
       order=OrderOption.RANDOM if x == 'train' else OrderOption.SEQUENTIAL,

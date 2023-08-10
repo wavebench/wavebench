@@ -1,4 +1,5 @@
 # %%
+import time
 import os
 import ml_collections
 import numpy as np
@@ -12,7 +13,6 @@ from wavebench import wavebench_dataset_path
 from wavebench.utils import absolute_file_paths
 from wavebench import wavebench_path
 from wavebench.plot_utils import plot_images, remove_frame
-
 # %%
 
 config = ml_collections
@@ -90,7 +90,12 @@ max_wavespeed - min_wavespeed) + min_wavespeed
 
 # only a single example is generated
 config.source_list = sorted(absolute_file_paths(data_path))[:1]#[82:83]
+
+start_time = time.time()
 initial_pressure_dataset, final_pressure_dataset = generate_rtc(config)
+time_last = time.time() - start_time
+print(f'time_last {time_last}s')
+
 jwave_final_pressure = final_pressure_dataset[0]
 
 # %%
