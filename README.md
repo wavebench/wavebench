@@ -6,6 +6,7 @@
 👋 Welcome to WaveBench!
 
 WaveBench provides a comprehensive collection of datasets designed for training machine learning-based solvers to wave propagation partial differential equations (PDEs).
+For a detailed description, see our paper [WaveBench: Benchmarking Data-driven Solvers for Linear Wave Propagation PDEs](https://openreview.net/forum?id=6wpInwnzs8) published in TMLR.
 
 Our datasets are [available on Zenodo](https://zenodo.org/record/8015145).
 
@@ -119,7 +120,16 @@ model.eval()
 
 # Citation
 
-We are preparing a preprint for this work.
+```latex
+@article{liu2024wavebench,
+  title={{WaveBench}: Benchmarking Data-driven Solvers for Linear Wave Propagation {PDE}s},
+  author={Tianlin Liu and Jose Antonio Lara Benitez and Florian Faucher and AmirEhsan Khorashadizadeh and Maarten V. de Hoop and Ivan Dokmani{\'c}},
+  journal={Transactions on Machine Learning Research},
+  issn={2835-8856},
+  year={2024},
+  url={https://openreview.net/forum?id=6wpInwnzs8},
+}
+```
 
 ## License
 MIT licensed. See `LICENSE.txt` file.
